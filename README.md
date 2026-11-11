@@ -36,6 +36,18 @@ To publish with GitHub Pages: **Settings → Pages → Deploy from branch → `m
 - Catalog and pricing: base prices and bulk discount tiers.
 - Role switch: Admin vs production staff.
 
+## Brand
+
+The logo is the "Placed" wordmark: lowercase **instamerch** in Inter Tight SemiBold (outlined), with the dot on the i as a tilted Signal Orange square. Files live in `brand/`:
+
+- `instamerch-logo-color.svg`, `-black.svg`, `-white.svg`, `-reversed-color.svg`
+- `instamerch-icon-light.svg`, `-dark.svg`, `-orange.svg`, plus `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`
+- `InstaMerch-Logo-HD.pdf`: vector logo sheet with colours and usage
+
+Colours: Ink `#151413`, Signal Orange `#E8501E`, Stone `#F1F0EC`.
+
+**Intro animation:** on first visit in a session, the "i" hops onto a white screen, then "nstamerch" pops up letter by letter and the page fades in (about 4.5 s). Click or press Esc to skip. It's skipped when the visitor has reduced motion turned on. It's the `im-intro` markup at the top of `<body>` with its styles in `<head>`; to replay it, clear the `im-intro-seen` key from session storage.
+
 ## Products
 
 Classic tee, pullover hoodie, dad cap, canvas tote, daypack, ceramic mug, steel bottle, travel tumbler, hardcover notebook, phone case, die-cut sticker and framed print. Products are drawn as shaded SVGs with a defined print area per placement, so the renderer can later be swapped for photo mockups.
