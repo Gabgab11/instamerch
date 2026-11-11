@@ -280,8 +280,6 @@ select.in{cursor:pointer}
 .si-ticks button.is-past::before{background-size:100% 100%;opacity:.6}
 .si-ticks button[aria-current="true"]::before{animation:sitick var(--si-speed,5s) linear forwards}
 @keyframes sitick{to{background-size:100% 100%}}
-.si-credit{margin-left:auto;font-size:10px;color:rgb(255 255 255/.7);text-decoration:none;white-space:nowrap}
-.si-credit:hover{color:#fff;text-decoration:underline}
 .si-panel{border-left:1px solid var(--line-2);display:flex;flex-direction:column;justify-content:center;padding-block:48px}
 .si-form{display:flex;flex-direction:column;gap:22px;width:100%;max-width:360px;margin:0 auto}
 .tabs{display:flex;gap:24px;border-bottom:1px solid var(--line-2)}
@@ -497,7 +495,6 @@ button.seg-b:hover{color:var(--ink)}
   .si-foot{flex-wrap:wrap;row-gap:8px}
   .si-cap{min-width:0;flex:1}
   .si-ticks{flex:0 0 100px;max-width:none}
-  .si-credit{flex-basis:100%;margin-left:0;font-size:9px}
   .si-panel{border-left:0;padding-block:28px 40px}
   .ob-grid{grid-template-columns:1fr;gap:28px}
   .drop{min-height:260px}
@@ -623,7 +620,7 @@ button.seg-b:hover{color:var(--ink)}
         <div class="si-head reveal"><span class="label">Custom merch · printed in-house</span><h1 class="si-title">From logo<br>to merch in minutes.</h1></div>
         <div class="rw-stage" id="siStage" aria-hidden="true"><div class="rw-floor"></div><div class="rw-actors" id="siActors"></div><span class="rw-sweep"></span></div>
         <div class="si-photos" id="siPhotos" aria-hidden="true"></div>
-        <div class="si-foot" id="siFoot" hidden><span class="si-cap" id="siCap"></span><div class="si-ticks" id="siTicks" role="group" aria-label="Photos"></div><a class="si-credit" id="siCredit" target="_blank" rel="noopener"></a></div>
+        <div class="si-foot" id="siFoot" hidden><span class="si-cap" id="siCap"></span><div class="si-ticks" id="siTicks" role="group" aria-label="Photos"></div></div>
       </div>
       <div class="si-panel gut">
         <!-- Sign in page (#sign-in) -->
@@ -1060,18 +1057,20 @@ function updateBadges(){
 
 /* ---------- sign in ---------- */
 /* ---------- sign-in lifestyle photos ----------
-   Free photos from Unsplash (Unsplash License: free for commercial use). Swap any entry for your own:
-   src can be a full URL or a file in the repo, e.g. 'photos/hoodie.jpg'. */
+   Free photos from Unsplash (Unsplash License: free for commercial use, no credit required).
+   Each one shows a printed product in use. Swap any entry for your own: src can be a full URL
+   or a file in the repo, e.g. 'photos/hoodie.jpg'. Photographers, for reference:
+   tote Evita Tomševica · hoodie Joseph Okon · mug (unsplash.com/photos/7Zyl18GzDPQ) · tee Sergiu Vălenaș · cap Nathan Dumlao */
 const SI_PHOTOS=[
-  {src:'https://images.unsplash.com/photo-1523307704902-3eabfe6f1402',piece:'Pullover hoodie',how:'Screen print',by:'Kamil Feczko',page:'https://unsplash.com/photos/dQpT4iZ7Aos'},
-  {src:'https://images.unsplash.com/photo-1508107480913-4682c0726ff9',piece:'Canvas tote',how:'Screen print',by:'Clem Onojeghuo',page:'https://unsplash.com/photos/1PI1fUtQsd8'},
-  {src:'https://images.unsplash.com/photo-1519744434498-a0de604df9db',piece:'Classic tee',how:'Screen print',by:'Javier Reyes',page:'https://unsplash.com/photos/XDYlOQUrfD8'},
-  {src:'https://images.unsplash.com/photo-1637703281179-b02b9bc3e0e2',piece:'Dad cap',how:'Embroidery',by:'aranprime',page:'https://unsplash.com/photos/EMSGpxov7wI'},
-  {src:'https://images.unsplash.com/photo-1605806943454-8a9fdcea7c56',piece:'Ceramic mug',how:'Sublimation',by:'allison christine',page:'https://unsplash.com/photos/fhrVOanXOM4'}
+  {src:'https://images.unsplash.com/photo-1674664836161-45a15c7f20d0',piece:'Canvas tote',how:'Screen print'},
+  {src:'https://images.unsplash.com/photo-1688841468382-e618833e4937',piece:'Pullover hoodie',how:'Screen print'},
+  {src:'https://images.unsplash.com/photo-1577056870082-18700c40cf28',piece:'Ceramic mug',how:'Sublimation'},
+  {src:'https://images.unsplash.com/photo-1686212582521-0a58db0d77e2',piece:'Classic tee',how:'Screen print'},
+  {src:'https://images.unsplash.com/photo-1746131563438-d8ac89e83a76',piece:'Dad cap',how:'Embroidery'}
 ];
 const SI_SPEED=5000;
 let siPhotoT=0,siIdx=-1,siOk=[];
-function siUrl(p,w,h){return /^https:\/\/images\.unsplash\.com\//.test(p.src)?`${p.src}?auto=format&fit=crop&crop=faces,entropy&w=${w}&h=${h}&q=72`:p.src}
+function siUrl(p,w,h){return /^https:\/\/images\.unsplash\.com\//.test(p.src)?`${p.src}?auto=format&fit=crop&crop=entropy&w=${w}&h=${h}&q=72`:p.src}
 function initSiPhotos(){
   const box=$('#siPhotos');if(!box||!SI_PHOTOS.length)return;
   let started=false;
@@ -1095,7 +1094,6 @@ function siGo(i){
   SI_PHOTOS.forEach((p,k)=>p.el&&p.el.classList.toggle('is-on',k===i));
   const p=SI_PHOTOS[i];
   $('#siCap').innerHTML=`<small>${esc(p.how)}</small>${esc(p.piece)}`;
-  const c=$('#siCredit');c.textContent=`Photo: ${p.by} / Unsplash`;c.href=p.page;
   siTicks();
   siPhotoT=setTimeout(()=>{if(S.view!=='signin'||document.hidden)return;const n=SI_PHOTOS.map((_,k)=>(i+1+k)%SI_PHOTOS.length).find(k=>siOk[k]);if(n!=null)siGo(n)},SI_SPEED);
 }
