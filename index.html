@@ -300,6 +300,11 @@ select.in{cursor:pointer}
 .ob-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:40px;align-items:start}
 .drop{border:1px dashed rgb(21 20 19/.35);background:radial-gradient(120% 80% at 50% 20%,var(--stage-hi),var(--stage) 70%);min-height:340px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .3s,background .3s}
 .drop.over,.drop:hover{border-color:var(--ink)}
+.drop-empty{width:84px;height:84px;border-radius:50%;border:1px solid var(--line-2);display:grid;place-items:center;color:var(--muted);background:var(--paper)}
+.drop.is-rejected{border-color:var(--bad)}
+.drop.is-rejected .drop-art img{opacity:.55}
+.ob-go{display:flex;align-items:center;gap:16px;flex-wrap:wrap;justify-content:flex-end}
+.ob-go .muted{max-width:240px}
 .drop-art{width:150px;height:150px;display:grid;place-items:center;margin-bottom:8px}
 .drop-art img{max-width:100%;max-height:100%;object-fit:contain}
 .drop b{font-weight:400;font-size:20px;letter-spacing:-.02em}
@@ -621,7 +626,7 @@ button.seg-b:hover{color:var(--ink)}
           <button type="button" class="cta-line" data-act="signin"><span class="gmark" aria-hidden="true">G</span>Sign up with Google</button>
           <div class="or">or with email</div>
           <div class="field"><label for="up-name">Your name</label><input class="in" id="up-name" autocomplete="name" placeholder="Amira Hassan"></div>
-          <div class="field"><label for="up-brand">Brand or company <span style="letter-spacing:0;text-transform:none">(optional)</span></label><input class="in" id="up-brand" autocomplete="organization" placeholder="Northfield Coffee"></div>
+          <div class="field"><label for="up-brand">Brand or company <span style="letter-spacing:0;text-transform:none">(optional)</span></label><input class="in" id="up-brand" autocomplete="organization" placeholder="Your brand"></div>
           <div class="field"><label for="up-email">Email</label><input class="in" id="up-email" type="email" autocomplete="email" placeholder="you@company.com"></div>
           <div class="field">
             <label for="up-pass">Password</label>
@@ -704,8 +709,7 @@ function mix(a,b,t){const x=rgb(a),y=rgb(b);return '#'+x.map((v,i)=>Math.round(v
 function lum(h){return rgb(h).map(v=>{v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4)}).reduce((a,v,i)=>a+v*[.2126,.7152,.0722][i],0)}
 const isDark = h => lum(h) < .22;
 
-/* ---------- sample customer logo ---------- */
-const SAMPLE = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 200 200"><defs><path id="r" d="M100 100 m-78 0 a78 78 0 1 1 156 0 a78 78 0 1 1 -156 0"/></defs><circle cx="100" cy="100" r="95" fill="none" stroke="#1E3B2F" stroke-width="5"/><circle cx="100" cy="100" r="64" fill="none" stroke="#1E3B2F" stroke-width="2"/><text font-family="Helvetica, Arial, sans-serif" font-size="16" font-weight="700" letter-spacing="4.2" fill="#1E3B2F"><textPath xlink:href="#r" href="#r">NORTHFIELD · COFFEE ROASTERS ·</textPath></text><circle cx="122" cy="76" r="9" fill="#1E3B2F"/><path d="M56 128 L86 84 L102 106 L116 90 L144 128 Z" fill="#1E3B2F"/><text x="100" y="149" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="3" fill="#1E3B2F">EST. 2019</text></svg>';
+/* ---------- customer logo: none until they upload one that passes the quality rules ---------- */
 const svgUrl = s => 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(s);
 
 /* ---------- catalog ---------- */
@@ -795,7 +799,7 @@ const DRAW = {
 
 function area(p,place){return p.pa[place]||p.pa[p.places[0]]}
 function variant(p,hex){
-  const tone=S.logo.tone||'mid',pre=p.method==='Embroidery'?'Embroidered · ':'';
+  const tone=(S.logo&&S.logo.tone)||'mid',pre=p.method==='Embroidery'?'Embroidered · ':'';
   if(p.method==='Laser engraving') return {label:'Laser engraved, one tone',f:'fEngrave'};
   const dark=isDark(hex)&&!(p.printOn==='white'&&p.logoLast);
   if(dark) return tone==='dark'?{label:pre+'Light version, made for dark colors',f:'fWhite'}:{label:pre+'Full color, bright enough for dark colors'};
@@ -811,7 +815,8 @@ function productSVG(id,cfg,opt){
   opt=opt||{};
   const p=P[id], c=cfg.color, k=mix(c,'#000000',.2), D=DRAW[id](c,k,cfg.place), light=lum(c)>.6;
   const a=area(p,cfg.place), s=cfg.scale/100, w=a.w*s, h=a.h*s, x=a.x+(a.w-w)/2, y=a.y+(a.h-h)/2, v=variant(p,c);
-  const logo=`<image href="${opt.logo||S.logo.url}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"${v.f?` filter="url(#${v.f})"`:''}${v.blend?' style="mix-blend-mode:multiply"':''}/>`;
+  const lurl=opt.logo||(S.logo&&S.logo.url);
+  const logo=!lurl?'':`<image href="${lurl}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"${v.f?` filter="url(#${v.f})"`:''}${v.blend?' style="mix-blend-mode:multiply"':''}/>`;
   const base=D.d.map(d=>`<path d="${d}" fill="${c}"${light?' stroke="#151413" stroke-opacity=".14" stroke-width="1.2"':''}/>`).join('');
   const shade=D.d.map(d=>`<path d="${d}" fill="url(#${D.cyl?'gC':'gH'})"/>${D.flat?'':`<path d="${d}" fill="url(#gV)"/>`}`).join('');
   const guide=opt.guides?`<rect x="${a.x}" y="${a.y}" width="${a.w}" height="${a.h}" fill="none" stroke="#151413" stroke-opacity=".55" stroke-width="1" stroke-dasharray="4 3"/>`:'';
@@ -837,7 +842,7 @@ function defCfg(id){
 }
 const S = {
   view:'signin', auth:'in', onboarded:false, obStep:0, purpose:null,
-  logo:{url:svgUrl(SAMPLE),name:'northfield-badge.svg',tone:'dark',vector:true,w:null,h:null,bg:'transparent',sample:true},
+  logo:null, reject:null,
   cfg:{}, bag:{}, idx:0, ship:'cairo',
   addr:{name:'Amira Hassan',email:'amira@northfield.co',line:'14 Hassan Sabry St, Zamalek',city:'Cairo',phone:'+20 100 000 0000'},
   orders:[], unseen:0, track:null, rules:{t1:25,r1:10,t2:50,r2:15},
@@ -1074,14 +1079,33 @@ function stepsBar(cur){
   const L=['Purpose','Logo','Pieces','Order'];
   return `<div class="steps prog" aria-label="Step ${cur+1} of 4">${L.map((l,i)=>`<div class="seg-b ${i<cur?'done':i===cur?'now':''}"><span class="tick-bar"></span><span class="tick-label">${pad(i+1)}${i===cur?'&nbsp;&nbsp;'+l:''}</span></div>`).join('')}</div>`;
 }
+/* ---------- logo quality rules ----------
+   A logo is only accepted when every rule passes. Tune the numbers here. */
+const LOGO_RULES={
+  minPx:1500,      // raster artwork: longest side after trimming empty space, in pixels (≈13 cm at 300 dpi)
+  minSharp:.85,    // edge crispness 0–1: 1 = pixel-sharp, ~.78 = blown up 2×, ~.35 = blown up 7×
+  minContrast:.35, // tonal difference between the artwork and its background, 0–1
+  minSolid:.55     // share of the artwork that is fully opaque (catches faded / see-through logos)
+};
+const RULE_TXT={
+  type:'PNG, SVG or JPG, up to 10 MB',
+  size:`At least ${LOGO_RULES.minPx} px on the longest side, or a vector SVG`,
+  sharp:'Crisp edges, not blurry or blown up',
+  clear:'Clear, solid artwork with strong contrast'
+};
 function logoChecks(){
-  const L=S.logo, out=[];
-  out.push([true,esc(L.name)+(L.sample?' <span class="tag ghost">Sample</span>':'')]);
-  if(L.vector) out.push([true,'Vector file. Prints sharp at any size.']);
-  else if(L.w&&Math.min(L.w,L.h)<800) out.push([false,`Low resolution (${L.w} × ${L.h} px). Fine for small prints like chest logos and stickers, may blur on large prints.`]);
-  else if(L.w) out.push([true,`${L.w} × ${L.h} px. Sharp enough for every print area.`]);
-  out.push(L.bg==='solid'?[false,'Solid colored background. It will print as a block. A transparent PNG or SVG looks better.']:[true,L.bg==='removed'?'White background removed automatically.':'Transparent background.']);
-  return out.map(([ok,t])=>`<li><span class="k" style="color:${ok?'var(--ok)':'var(--warn)'}">${ok?CHECK:'!'}</span><span>${t}</span></li>`).join('');
+  const L=S.logo, R=S.reject;
+  const row=(st,t)=>`<li><span class="k" style="color:${st==='ok'?'var(--ok)':st==='bad'?'var(--bad)':st==='warn'?'var(--warn)':'var(--line-2)'}">${st==='ok'?CHECK:st==='bad'?'×':st==='warn'?'!':'○'}</span><span${st==='bad'?' style="color:var(--bad)"':''}>${t}</span></li>`;
+  if(!L&&!R) return [row('',RULE_TXT.type),row('',RULE_TXT.size),row('',RULE_TXT.sharp),row('',RULE_TXT.clear)].join('');
+  const X=R||L, q=X.q||{}, out=[];
+  out.push(row(R?'bad':'ok',esc(X.name)+(R?' <span class="tag" style="background:var(--bad)">Not accepted</span>':'')));
+  if(X.vector&&!q.wraps) out.push(row('ok','Vector file. Prints sharp at any size.'));
+  else out.push(q.size?row('ok',`${q.aw} × ${q.ah} px artwork. Big enough for every print area.`):row('bad',`Too small: the artwork is ${q.aw} × ${q.ah} px. We need at least ${LOGO_RULES.minPx} px on the longest side.`));
+  if(!X.vector&&q.clear!==false&&q.solid!==false&&!q.empty) out.push(q.sharp?row('ok','Crisp edges.'):row('bad','Edges look blurry or blown up. Export the original file at full size.'));
+  if(q.wraps) out.push(row('bad','This SVG only contains a picture. Upload the original PNG, or a true vector SVG.'));
+  out.push(q.solid===false?row('bad','Parts of the logo look faded or see-through. Use a solid version.'):q.clear===false?row('bad','Too faint or low in contrast to print clearly. Use a bolder or darker version.'):row('ok','Clear, solid artwork with strong contrast.'));
+  if(!R) out.push(X.bg==='solid'?row('warn','Solid colored background. It will print as a block. A transparent PNG or SVG looks better.'):row('ok',X.bg==='removed'?'White background removed automatically.':'Transparent background.'));
+  return out.join('');
 }
 function tile(L,f,blend){return `<svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><image href="${L.url}" x="19" y="19" width="62" height="62" preserveAspectRatio="xMidYMid meet"${f?` filter="url(#${f})"`:''}${blend?' style="mix-blend-mode:multiply"':''}/></svg>`}
 function renderOnboard(){
@@ -1091,24 +1115,29 @@ function renderOnboard(){
     <div class="choices">${PURPOSE.map((p,i)=>`<button class="choice reveal" style="animation-delay:${.08*i+.1}s" data-act="purpose" data-v="${p[0]}"><b>${p[0]}</b><span>${p[1]}</span>${ARR}</button>`).join('')}</div>`;
     return;
   }
-  const L=S.logo;
-  r.innerHTML=`${stepsBar(1)}<div class="reveal" style="display:flex;flex-direction:column;gap:12px"><h1 class="ob-title">Add your logo.</h1><p class="muted">PNG, SVG or JPG up to 10 MB. We'll make the versions each product needs.</p></div>
+  const L=S.logo, R=S.reject, art=R||L;
+  const UP='<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M4 15v4.5h16V15"/></svg>';
+  r.innerHTML=`${stepsBar(1)}<div class="reveal" style="display:flex;flex-direction:column;gap:12px"><h1 class="ob-title">Add your logo.</h1><p class="muted">PNG, SVG or JPG up to 10 MB. It has to be sharp and clear to print well, so we check it first.</p></div>
   <div class="ob-grid">
-    <div class="drop reveal" id="drop" role="button" tabindex="0" data-act="pick" aria-label="Upload your logo"><div class="drop-art"><img src="${L.url}" alt="Your logo"></div><b>Drop your logo here</b><span class="muted" style="font-size:12px">or <span class="u">choose a file</span></span></div>
+    <div class="drop reveal${R?' is-rejected':''}" id="drop" role="button" tabindex="0" data-act="pick" aria-label="Upload your logo">
+      <div class="drop-art">${art?`<img src="${art.url}" alt="${R?'Rejected logo':'Your logo'}">`:`<span class="drop-empty">${UP}</span>`}</div>
+      <b>${R?'Try a sharper file':L?'Drop a new logo to replace it':'Drop your logo here'}</b><span class="muted" style="font-size:12px">or <span class="u">choose a file</span></span>
+    </div>
     <div class="ob-side reveal" style="animation-delay:.15s">
-      <span class="label">Checks</span><ul class="checks">${logoChecks()}</ul>
-      <span class="label">Made for you automatically</span>
+      <span class="label">${art?'Checks':'What we check'}</span><ul class="checks">${logoChecks()}</ul>
+      ${R?`<p class="msg" style="color:var(--bad);font-size:12px" role="alert">This logo was not accepted. ${L?`We kept your previous logo, ${esc(L.name)}.`:'Upload a file that passes every check to continue.'}</p>`:''}
+      ${L&&!R?`<span class="label">Made for you automatically</span>
       <div class="variants">
         <figure><div class="vt">${tile(L,'',1)}</div><figcaption>On light products</figcaption></figure>
         <figure><div class="vt vt-d">${tile(L,L.tone==='dark'?'fWhite':'',0)}</div><figcaption>${L.tone==='dark'?'Light version, on dark products':'Full color, on dark products'}</figcaption></figure>
         <figure><div class="vt vt-m">${tile(L,'fEngrave',0)}</div><figcaption>One tone, for laser engraving</figcaption></figure>
-      </div>
+      </div>`:''}
       <details class="textlogo"><summary class="ulink">No logo yet? Type your brand name</summary>
-        <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px"><div class="field"><label for="tl">Brand name</label><input class="in" id="tl" maxlength="20" placeholder="Cairo Runners"></div><button class="cta-line cta-sm" data-act="mktext">Use as my logo</button></div>
+        <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px"><div class="field"><label for="tl">Brand name</label><input class="in" id="tl" maxlength="20" placeholder="Your brand"></div><button class="cta-line cta-sm" data-act="mktext">Use as my logo</button></div>
       </details>
     </div>
   </div>
-  <div class="ob-foot"><button class="ulink" data-act="obBack" style="font-size:13px">Back</button><button class="cta" data-act="obDone">See it on all 12 pieces ${ARR}</button></div>`;
+  <div class="ob-foot"><button class="ulink" data-act="obBack" style="font-size:13px">Back</button><div class="ob-go">${L?'':'<span class="muted" style="font-size:12px">Add a logo that passes the checks to continue.</span>'}<button class="cta" data-act="obDone"${L?'':' disabled aria-disabled="true"'}>See it on all 12 pieces ${ARR}</button></div></div>`;
   const drop=$('#drop');
   ['dragover','dragenter'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over')}));
   ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over')}));
@@ -1139,6 +1168,7 @@ function loadSvg(text,name){
   const root=doc&&doc.documentElement;
   if(!root||root.nodeName.toLowerCase()!=='svg'||doc.getElementsByTagName('parsererror').length){toast('That SVG could not be read. Try exporting it again.');return}
   root.querySelectorAll('script,foreignObject').forEach(n=>n.remove());
+  const wraps=root.querySelector('image')&&!root.querySelector('path,circle,rect,ellipse,polygon,polyline,line,text');
   [...root.querySelectorAll('*')].forEach(n=>[...n.attributes].forEach(a=>{if(/^on/i.test(a.name))n.removeAttribute(a.name)}));
   if(!root.getAttribute('xmlns'))root.setAttribute('xmlns','http://www.w3.org/2000/svg');
   let vb=(root.getAttribute('viewBox')||'').trim().split(/[\s,]+/).map(Number);
@@ -1157,13 +1187,19 @@ function loadSvg(text,name){
       const cx=cv.getContext('2d');cx.drawImage(test,0,0,cv.width,cv.height);
       tone=logoTone(cx,cv.width,cv.height);
       const b=alphaBox(cx,cv.width,cv.height);
+      let q={clear:true,solid:true};
+      if(wraps)q={wraps:true,clear:true,solid:true};
+      else if(!b)q={empty:true,clear:false,solid:true};
+      else{const an=document.createElement('canvas');an.width=b.w;an.height=b.h;an.getContext('2d').drawImage(cv,b.x,b.y,b.w,b.h,0,0,b.w,b.h);const r=artQuality(an,null);q={clear:r.clear,solid:r.solid}}
+      if(wraps||q.empty||!q.clear||!q.solid){rejectLogo({url,name,vector:true,bg:'transparent',tone,q});return}
       if(b&&(b.w<cv.width*.92||b.h<cv.height*.92)){
         const pad=Math.round(Math.max(b.w,b.h)*.03);
         const nx=vb[0]+(b.x-pad)/sc,ny=vb[1]+(b.y-pad)/sc,nw=(b.w+pad*2)/sc,nh=(b.h+pad*2)/sc;
         root.setAttribute('viewBox',`${nx} ${ny} ${nw} ${nh}`);root.setAttribute('width',nw);root.setAttribute('height',nh);
-        setLogo({url:svgUrl(new XMLSerializer().serializeToString(root)),name,vector:true,bg:'transparent',cropped:true,tone});return;
+        setLogo({url:svgUrl(new XMLSerializer().serializeToString(root)),name,vector:true,bg:'transparent',cropped:true,tone,q});return;
       }
     }catch(_){}
+    if(wraps){rejectLogo({url,name,vector:true,bg:'transparent',tone,q:{wraps:true,clear:true,solid:true}});return}
     setLogo({url,name,vector:true,bg:'transparent',tone});
   };
   test.onerror=()=>toast('That SVG uses features we can’t render. Export it as PNG instead.');
@@ -1174,13 +1210,38 @@ function alphaBox(cx,W,H){
   for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(px[(y*W+x)*4+3]>12){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
   return x1<0?null:{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1};
 }
+/* measure an artwork canvas: contrast, solidity and edge crispness */
+function artQuality(cv,bgLum,bgRGB){
+  const W=cv.width,H=cv.height,px=cv.getContext('2d').getImageData(0,0,W,H).data,N=W*H;
+  let vis=0,solid=0,inkW=0,inkB=0,inkN=0;
+  for(let i=0;i<N;i++){const a=px[i*4+3]/255;if(a>.04){vis++;if(a>.9)solid++}
+    if(a>.5&&(!bgRGB||Math.max(Math.abs(px[i*4]-bgRGB[0]),Math.abs(px[i*4+1]-bgRGB[1]),Math.abs(px[i*4+2]-bgRGB[2]))>40)){inkN++;const l=(.2126*px[i*4]+.7152*px[i*4+1]+.0722*px[i*4+2])/255;inkW+=l;inkB+=l}}
+  if(!vis||!inkN) return {empty:true,solid:true,clear:false,sharp:false,contrast:0,sharpness:0};
+  const inkL=inkW/inkN;
+  // background: the given solid colour, or for transparent art whichever of white / black it stands out on most
+  const bg=bgLum!=null?bgLum:(Math.abs(1-inkL)>=Math.abs(inkL)?1:0);
+  const contrast=Math.abs(inkL-bg);
+  // luminance composited over that background
+  const L=new Float32Array(N);
+  for(let i=0;i<N;i++){const a=px[i*4+3]/255,l=(.2126*px[i*4]+.7152*px[i*4+1]+.0722*px[i*4+2])/255;L[i]=l*a+bg*(1-a)}
+  // Sobel edge strength, normalised so a pixel-sharp step of the artwork's own contrast = 1
+  const g=[];const C=Math.max(contrast,.08);
+  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;
+    const gx=(L[i-W+1]+2*L[i+1]+L[i+W+1])-(L[i-W-1]+2*L[i-1]+L[i+W-1]);
+    const gy=(L[i+W-1]+2*L[i+W]+L[i+W+1])-(L[i-W-1]+2*L[i-W]+L[i-W+1]);
+    const m=Math.hypot(gx,gy)/(4*C);if(m>.2)g.push(m)}
+  let sharpness=0;
+  if(g.length>20){g.sort((p,q)=>p-q);sharpness=Math.min(1,g[Math.floor(g.length*.97)])}
+  return {contrast:+contrast.toFixed(2),sharpness:+sharpness.toFixed(2),solidShare:+(solid/vis).toFixed(2),
+    clear:contrast>=LOGO_RULES.minContrast,solid:solid/vis>=LOGO_RULES.minSolid,sharp:sharpness>=LOGO_RULES.minSharp};
+}
 function processRaster(img,name){
   const w=img.naturalWidth,h=img.naturalHeight;
   if(!w||!h){toast('We could not read that image. Try exporting it again as PNG.');return}
-  const sc=Math.min(1,1200/Math.max(w,h));
+  const sc=Math.min(1,3000/Math.max(w,h));
   const cv=document.createElement('canvas');cv.width=Math.round(w*sc);cv.height=Math.round(h*sc);
-  const cx=cv.getContext('2d');cx.drawImage(img,0,0,cv.width,cv.height);
-  let bg='transparent',out=cv;
+  const cx=cv.getContext('2d');cx.imageSmoothingQuality='high';cx.drawImage(img,0,0,cv.width,cv.height);
+  let bg='transparent',bgLum=null,bgRGB=null,art={x:0,y:0,w:cv.width,h:cv.height};
   try{
     const W=cv.width,H=cv.height,d=cx.getImageData(0,0,W,H),px=d.data;
     // sample the border: if it is solid and light, knock that colour out
@@ -1193,24 +1254,43 @@ function processRaster(img,name){
       if(Math.min(R,G,B)>200){
         for(let i=0;i<px.length;i+=4){const dd=Math.max(Math.abs(px[i]-R),Math.abs(px[i+1]-G),Math.abs(px[i+2]-B));if(dd<18)px[i+3]=0;else if(dd<48)px[i+3]=Math.round(px[i+3]*(dd-18)/30)}
         cx.putImageData(d,0,0);bg='removed';
-      }else bg='solid';
+      }else{bg='solid';bgLum=(.2126*R+.7152*G+.0722*B)/255;bgRGB=[R,G,B]}
     }
-    const b=alphaBox(cx,W,H);
-    if(b&&(b.w<W*.95||b.h<H*.95)){
-      const pad=Math.round(Math.max(b.w,b.h)*.03),c2=document.createElement('canvas');
-      c2.width=b.w+pad*2;c2.height=b.h+pad*2;c2.getContext('2d').drawImage(cv,b.x,b.y,b.w,b.h,pad,pad,b.w,b.h);out=c2;
-    }
+    if(bg!=='solid'){const b=alphaBox(cx,W,H);if(b)art=b}
   }catch(_){}
-  let tone='mid';try{tone=logoTone(out.getContext('2d'),out.width,out.height)}catch(_){}
-  setLogo({url:out.toDataURL('image/png'),name,vector:false,w,h,bg,tone});
+  // artwork size at the file's own resolution
+  const aw=Math.round(art.w/sc),ah=Math.round(art.h/sc);
+  const pad=Math.round(Math.max(art.w,art.h)*.03);
+  // analyse at the size the rule asks for, so a blown-up file shows its blur
+  const k=Math.min(1,LOGO_RULES.minPx/Math.max(art.w,art.h));
+  const an=document.createElement('canvas');an.width=Math.max(1,Math.round(art.w*k));an.height=Math.max(1,Math.round(art.h*k));
+  const ax=an.getContext('2d');ax.imageSmoothingQuality='high';ax.drawImage(cv,art.x,art.y,art.w,art.h,0,0,an.width,an.height);
+  let q={};try{q=artQuality(an,bgLum,bgRGB)}catch(_){q={clear:true,solid:true,sharp:true}}
+  q.aw=aw;q.ah=ah;q.size=Math.max(aw,ah)>=LOGO_RULES.minPx;
+  // output: cropped artwork, at most 1600 px
+  const o=Math.min(1,1600/Math.max(art.w,art.h)),out=document.createElement('canvas');
+  out.width=Math.round((art.w+pad*2)*o);out.height=Math.round((art.h+pad*2)*o);
+  const ox=out.getContext('2d');ox.imageSmoothingQuality='high';ox.drawImage(cv,art.x-pad,art.y-pad,art.w+pad*2,art.h+pad*2,0,0,out.width,out.height);
+  let tone='mid';try{tone=logoTone(ox,out.width,out.height)}catch(_){}
+  const L={url:out.toDataURL('image/png'),name,vector:false,w,h,bg,tone,q};
+  if(q.empty){rejectLogo(Object.assign(L,{q:Object.assign(q,{clear:false})}));return}
+  if(!(q.size&&q.sharp&&q.clear&&q.solid)){rejectLogo(L);return}
+  setLogo(L);
+}
+function rejectLogo(L){
+  S.reject=L;
+  if(S.view==='onboard')renderOnboard();
+  const q=L.q||{};
+  toast(q.wraps?'Logo not accepted: the SVG only contains a picture.':q.size===false?'Logo not accepted: the file is too small to print sharp.':q.sharp===false?'Logo not accepted: the edges are blurry.':q.solid===false?'Logo not accepted: it looks faded.':'Logo not accepted: it is too faint to print clearly.');
 }
 function setLogo(L){
-  S.logo=Object.assign({sample:false},L);
+  S.logo=L;S.reject=null;
   syncLogo();
   if(S.view==='onboard')renderOnboard();
-  toast('Logo applied to all 12 pieces.');
+  toast('Logo accepted and applied to all 12 pieces.');
 }
 function syncLogo(){
+  if(!S.logo)return;
   $('#chipImg').src=S.logo.url;$('#chipName').textContent=S.logo.name;
   if(ring){ring.refreshAll();if(lbOpen)fillLB()}
   if(siRing)siRing.refreshAll();
@@ -1223,7 +1303,7 @@ const SPEED=5000;
 function initRunway(){
   if(ring)return;
   $('#ticks').innerHTML=IDS.map((id,i)=>`<button class="tick" data-act="tick" data-v="${i}" aria-current="${i===0}" aria-label="${pad(i+1)}: ${P[id].name}"><span class="tick-bar"></span><span class="tick-label">${pad(i+1)}<span class="tick-name">&nbsp;&nbsp;${P[id].name}</span></span></button>`).join('');
-  $('#chipImg').src=S.logo.url;$('#chipName').textContent=S.logo.name;
+  if(S.logo){$('#chipImg').src=S.logo.url;$('#chipName').textContent=S.logo.name}
   ring=new Ring($('#stage'),$('#actors'),{interactive:true,onIndex,onDrag:d=>{cursorState()}});
   ring.idx=-1;ring.setIndex(S.idx,true);ring.target=S.idx;ring.cur=S.idx-(reduce?0:1.15);ring.kick();
   initCursor();
@@ -1569,7 +1649,7 @@ document.addEventListener('click',e=>{
     case 'signin':signedIn();break;
     case 'purpose':S.purpose=v;S.obStep=1;renderOnboard();window.scrollTo(0,0);break;
     case 'obBack':S.obStep=0;renderOnboard();break;
-    case 'obDone':S.onboarded=true;show('runway');break;
+    case 'obDone':if(!S.logo){toast('Add a logo that passes the checks first.');break}S.onboarded=true;show('runway');break;
     case 'pick':$('#fileIn').click();break;
     case 'mktext':{const t=($('#tl').value||'').trim();if(!t){toast('Type a brand name first.');break}
       const fsz=Math.max(20,Math.min(46,520/t.length));
