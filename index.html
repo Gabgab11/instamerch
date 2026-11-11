@@ -266,6 +266,19 @@ select.in{cursor:pointer}
 .tabs button{background:none;border:0;padding:12px 0;font-size:13px;color:var(--muted);cursor:pointer;position:relative}
 .tabs button[aria-selected="true"]{color:var(--ink)}
 .tabs button[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--ink)}
+.flabel-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.flabel-row label{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.flabel-row .ulink{font-size:11px;color:var(--muted)}
+.flabel-row .ulink:hover{color:var(--ink)}
+.check-row{display:flex;align-items:center;gap:10px;font-size:12px;cursor:pointer;min-height:24px}
+.check-row input{width:16px;height:16px;margin:0;accent-color:var(--ink);flex:0 0 auto}
+.si-switch{font-size:13px;color:var(--muted);padding-top:4px;border-top:1px solid var(--line-2);padding-top:18px}
+.si-switch .ulink{color:var(--ink);font-size:13px}
+.pw-hint{display:flex;align-items:center;gap:10px;font-size:11px;color:var(--muted);padding-top:6px}
+.pw-bar{position:relative;width:64px;height:2px;background:rgb(21 20 19/.14);overflow:hidden;flex:0 0 auto}
+.pw-bar b{position:absolute;inset:0;background:var(--ink);transform-origin:left;transform:scaleX(0);transition:transform .5s var(--ease)}
+.si-form[hidden]{display:none!important}
+.si-form.reveal-in{animation:itemin .9s var(--ease) backwards}
 .or{display:flex;align-items:center;gap:12px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
 .gmark{width:20px;height:20px;border-radius:50%;border:1px solid currentColor;display:grid;place-items:center;font-size:11px;font-weight:600}
@@ -477,7 +490,7 @@ button.seg-b:hover{color:var(--ink)}
 </style>
 
 <style>
-/* InstaMerch intro: the "i" walks in and spells the name (plays once per session) */
+/* InstaMerch intro: the "i" walks in and spells the name (plays on every page load) */
 .im-intro{position:fixed;inset:0;z-index:9999;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
 .im-intro.is-out{animation:im-out .6s cubic-bezier(.65,0,.35,1) forwards}
 .im-word{font-family:'Inter Tight','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:clamp(52px,13vw,190px);letter-spacing:-.05em;line-height:1;color:#151413;display:flex;align-items:flex-end;white-space:nowrap}
@@ -518,10 +531,10 @@ button.seg-b:hover{color:var(--ink)}
 <script>
 (function(){
   var el=document.getElementById('im-intro'); if(!el) return;
-  var ONCE_PER_SESSION=true, HOLD_MS=4300;
+  var ONCE_PER_SESSION=false, HOLD_MS=4300;
   function done(){ if(el.parentNode) el.parentNode.removeChild(el); }
   function leave(){ if(el.classList.contains('is-out')) return; el.classList.add('is-out'); el.addEventListener('animationend',done); setTimeout(done,900); }
-  try{ if(ONCE_PER_SESSION && sessionStorage.getItem('im-intro-seen')){ done(); return; } sessionStorage.setItem('im-intro-seen','1'); }catch(e){}
+  try{ if(ONCE_PER_SESSION){ if(sessionStorage.getItem('im-intro-seen')){ done(); return; } sessionStorage.setItem('im-intro-seen','1'); } }catch(e){}
   if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches){ done(); return; }
   function start(){ el.classList.add('im-run'); setTimeout(leave,HOLD_MS); }
   var started=false; function go(){ if(!started){ started=true; start(); } }
@@ -577,23 +590,48 @@ button.seg-b:hover{color:var(--ink)}
         <div class="rw-stage" id="siStage" aria-hidden="true"><div class="rw-floor"></div><div class="rw-actors" id="siActors"></div><span class="rw-sweep"></span></div>
       </div>
       <div class="si-panel gut">
-        <form class="si-form" id="authForm" novalidate>
-          <div class="tabs" role="tablist" aria-label="Account">
-            <button type="button" role="tab" id="tabIn" aria-selected="true" data-act="auth" data-v="in">Sign in</button>
-            <button type="button" role="tab" id="tabUp" aria-selected="false" data-act="auth" data-v="up">Create account</button>
-          </div>
+        <!-- Sign in page (#sign-in) -->
+        <form class="si-form" id="signinForm" aria-labelledby="inTitle" novalidate>
           <div style="display:flex;flex-direction:column;gap:8px">
-            <h2 id="authTitle" style="font-size:32px">Welcome back.</h2>
-            <p class="muted" id="authSub" style="font-size:13px">Sign in to see your designs and orders.</p>
+            <span class="label">Sign in</span>
+            <h2 id="inTitle" style="font-size:32px">Welcome back.</h2>
+            <p class="muted" style="font-size:13px">Sign in to see your designs and orders.</p>
           </div>
           <button type="button" class="cta-line" data-act="signin"><span class="gmark" aria-hidden="true">G</span>Continue with Google</button>
           <div class="or">or with email</div>
-          <div class="field" id="nameField" hidden><label for="au-name">Your name</label><input class="in" id="au-name" autocomplete="name" placeholder="Amira Hassan"></div>
-          <div class="field"><label for="au-email">Email</label><input class="in" id="au-email" type="email" autocomplete="email" value="amira@northfield.co"></div>
-          <div class="field"><label for="au-pass">Password</label><input class="in" id="au-pass" type="password" autocomplete="current-password" value="demopass1"></div>
-          <p class="msg" id="authMsg" role="status" aria-live="polite" style="color:var(--bad)"></p>
-          <button class="cta" type="submit"><span id="authCta">Sign in</span><svg class="arr" width="22" height="12" viewBox="0 0 26 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 7h24M19 1l6 6-6 6"/></svg></button>
+          <div class="field"><label for="in-email">Email</label><input class="in" id="in-email" type="email" autocomplete="email" value="amira@northfield.co"></div>
+          <div class="field">
+            <div class="flabel-row"><label for="in-pass">Password</label><button type="button" class="ulink" data-act="forgot">Forgot password?</button></div>
+            <input class="in" id="in-pass" type="password" autocomplete="current-password" value="demopass1">
+          </div>
+          <label class="check-row"><input type="checkbox" id="in-remember" checked><span>Keep me signed in on this device</span></label>
+          <p class="msg" id="inMsg" role="status" aria-live="polite" style="color:var(--bad)"></p>
+          <button class="cta" type="submit">Sign in<svg class="arr" width="22" height="12" viewBox="0 0 26 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 7h24M19 1l6 6-6 6"/></svg></button>
+          <p class="si-switch">New to InstaMerch? <button type="button" class="ulink u" data-act="auth" data-v="up">Create an account</button></p>
           <p class="muted" style="font-size:11px">Demo: any email and an 8+ character password will sign you in.</p>
+        </form>
+
+        <!-- Sign up page (#sign-up) -->
+        <form class="si-form" id="signupForm" aria-labelledby="upTitle" novalidate hidden>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <span class="label">Create account</span>
+            <h2 id="upTitle" style="font-size:32px">Start making merch.</h2>
+            <p class="muted" style="font-size:13px">Free to sign up. No minimum order.</p>
+          </div>
+          <button type="button" class="cta-line" data-act="signin"><span class="gmark" aria-hidden="true">G</span>Sign up with Google</button>
+          <div class="or">or with email</div>
+          <div class="field"><label for="up-name">Your name</label><input class="in" id="up-name" autocomplete="name" placeholder="Amira Hassan"></div>
+          <div class="field"><label for="up-brand">Brand or company <span style="letter-spacing:0;text-transform:none">(optional)</span></label><input class="in" id="up-brand" autocomplete="organization" placeholder="Northfield Coffee"></div>
+          <div class="field"><label for="up-email">Email</label><input class="in" id="up-email" type="email" autocomplete="email" placeholder="you@company.com"></div>
+          <div class="field">
+            <label for="up-pass">Password</label>
+            <input class="in" id="up-pass" type="password" autocomplete="new-password" aria-describedby="upPassHint">
+            <span class="pw-hint" id="upPassHint"><i class="pw-bar"><b id="upPassBar"></b></i><span id="upPassTxt">At least 8 characters</span></span>
+          </div>
+          <label class="check-row"><input type="checkbox" id="up-terms"><span>I agree to the terms and privacy policy</span></label>
+          <p class="msg" id="upMsg" role="status" aria-live="polite" style="color:var(--bad)"></p>
+          <button class="cta" type="submit">Create account<svg class="arr" width="22" height="12" viewBox="0 0 26 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 7h24M19 1l6 6-6 6"/></svg></button>
+          <p class="si-switch">Already have an account? <button type="button" class="ulink u" data-act="auth" data-v="in">Sign in</button></p>
         </form>
       </div>
     </div>
@@ -989,22 +1027,45 @@ function initSignin(){
   siRing=new Ring($('#siStage'),$('#siActors'),{interactive:false});
   if(!reduce) siTimer=setInterval(()=>{if(S.view==='signin'&&!document.hidden)siRing.next()},2600);
 }
-function setAuth(m){
+function setAuth(m,opt){
+  opt=opt||{};
   S.auth=m;const up=m==='up';
-  $('#tabIn').setAttribute('aria-selected',!up);$('#tabUp').setAttribute('aria-selected',up);
-  $('#nameField').hidden=!up;
-  $('#authTitle').textContent=up?'Start making merch.':'Welcome back.';
-  $('#authSub').textContent=up?'Free to sign up. No minimum order.':'Sign in to see your designs and orders.';
-  $('#authCta').textContent=up?'Create account':'Sign in';
-  $('#au-pass').autocomplete=up?'new-password':'current-password';
+  const fin=$('#signinForm'),fup=$('#signupForm'),show_=up?fup:fin,hide_=up?fin:fup;
+  hide_.hidden=true;show_.hidden=false;
+  show_.classList.remove('reveal-in');void show_.offsetWidth;if(!opt.quiet)show_.classList.add('reveal-in');
+  $('#inMsg').textContent='';$('#upMsg').textContent='';
+  document.title=(up?'Create account':'Sign in')+' · InstaMerch';
+  const h=up?'#sign-up':'#sign-in';
+  if(S.view==='signin'&&location.hash!==h){try{history[opt.push?'pushState':'replaceState'](null,'',h)}catch(e){}}
+  if(opt.focus){const f=up?$('#up-name'):$('#in-email');f&&f.focus({preventScroll:true})}
 }
-function signedIn(){clearInterval(siTimer);show(S.onboarded?'runway':'onboard')}
-$('#authForm').addEventListener('submit',e=>{
+function authFromHash(){return location.hash==='#sign-up'?'up':'in'}
+addEventListener('hashchange',()=>{if(S.view==='signin'&&(location.hash==='#sign-up'||location.hash==='#sign-in'))setAuth(authFromHash())});
+addEventListener('popstate',()=>{if(S.view==='signin')setAuth(authFromHash(),{quiet:true})});
+function signedIn(){clearInterval(siTimer);document.title='InstaMerch';try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}show(S.onboarded?'runway':'onboard')}
+const EMAIL_RE=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+$('#signinForm').addEventListener('submit',e=>{
   e.preventDefault();
-  const em=$('#au-email').value.trim(),pw=$('#au-pass').value;
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)){$('#authMsg').textContent='Enter a valid email address.';return}
-  if(pw.length<8){$('#authMsg').textContent='Your password needs at least 8 characters.';return}
-  $('#authMsg').textContent='';S.addr.email=em;signedIn();
+  const em=$('#in-email').value.trim(),pw=$('#in-pass').value,msg=$('#inMsg');
+  if(!EMAIL_RE.test(em)){msg.textContent='Enter a valid email address.';$('#in-email').focus();return}
+  if(pw.length<8){msg.textContent='Your password needs at least 8 characters.';$('#in-pass').focus();return}
+  msg.textContent='';S.addr.email=em;signedIn();
+});
+['#signinForm','#signupForm'].forEach(f=>$(f).addEventListener('input',()=>{$(f==='#signinForm'?'#inMsg':'#upMsg').textContent=''}));
+$('#up-pass').addEventListener('input',e=>{
+  const v=e.target.value,score=(v.length>=8)+(v.length>=12)+(/[A-Z]/.test(v)&&/[a-z]/.test(v))+(/\d/.test(v)||/[^A-Za-z0-9]/.test(v));
+  $('#upPassBar').style.transform='scaleX('+(v?Math.max(.15,score/4):0)+')';
+  $('#upPassTxt').textContent=!v?'At least 8 characters':v.length<8?(8-v.length)+' more character'+(8-v.length===1?'':'s'):['Okay','Okay','Good','Strong','Very strong'][score];
+});
+$('#signupForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const nm=$('#up-name').value.trim(),em=$('#up-email').value.trim(),pw=$('#up-pass').value,msg=$('#upMsg');
+  if(!nm){msg.textContent='Add your name so we know who the order is for.';$('#up-name').focus();return}
+  if(!EMAIL_RE.test(em)){msg.textContent='Enter a valid email address.';$('#up-email').focus();return}
+  if(pw.length<8){msg.textContent='Your password needs at least 8 characters.';$('#up-pass').focus();return}
+  if(!$('#up-terms').checked){msg.textContent='Agree to the terms to create your account.';return}
+  msg.textContent='';S.addr.name=nm;S.addr.email=em;
+  toast('Account created. Welcome, '+nm.split(' ')[0]+'.');signedIn();
 });
 
 /* ---------- onboarding ---------- */
@@ -1503,7 +1564,8 @@ document.addEventListener('click',e=>{
   switch(a){
     case 'home':if(S.view!=='signin'&&S.view!=='onboard')show('runway');break;
     case 'nav':if(v==='orders')S.track=null;if(v==='team')S.team.open=null;show(v);break;
-    case 'auth':setAuth(v);break;
+    case 'auth':setAuth(v,{push:true,focus:true});break;
+    case 'forgot':toast('Demo: a reset link would be emailed to '+($('#in-email').value.trim()||'you')+'.');break;
     case 'signin':signedIn();break;
     case 'purpose':S.purpose=v;S.obStep=1;renderOnboard();window.scrollTo(0,0);break;
     case 'obBack':S.obStep=0;renderOnboard();break;
@@ -1568,6 +1630,7 @@ document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.view===
 /* ---------- boot ---------- */
 initSignin();
 show('signin');
+setAuth(authFromHash(),{quiet:true});
 })();
 </script>
 
