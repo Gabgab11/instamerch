@@ -754,6 +754,22 @@ window.InstaDepthField=function(root,opts){
 };
 </script>
 
+<style id="flip-css">
+/* sign in ⇄ create account flip card */
+.auth-switch{position:relative;display:grid;grid-template-columns:1fr 1fr;padding:4px;border-radius:999px;background:rgb(255 255 255/.55);border:1px solid rgb(255 255 255/.8);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 1px 2px rgb(21 20 19/.06) inset;width:100%;max-width:360px;margin:0 auto 18px}
+.auth-switch button{position:relative;z-index:1;min-height:42px;border:0;background:none;border-radius:999px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;transition:color .35s}
+.auth-switch button[aria-selected="true"]{color:#fff}
+.auth-thumb{position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);border-radius:999px;background:#151413;box-shadow:0 8px 18px -10px rgb(21 20 19/.7);transition:transform .6s cubic-bezier(.34,1.3,.64,1)}
+.is-up .auth-thumb{transform:translateX(100%)}
+.flip{perspective:1600px;width:100%;max-width:360px;margin:0 auto}
+.flip-inner{display:grid;transform-style:preserve-3d;transition:transform .9s cubic-bezier(.65,0,.35,1)}
+.flip-face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:rgb(255 255 255/.5);border:1px solid rgb(255 255 255/.85);border-radius:24px;padding:24px 22px;box-shadow:0 1px 0 rgb(255 255 255/.8) inset,0 24px 50px -30px rgb(60 30 10/.35);backdrop-filter:blur(18px) saturate(150%);-webkit-backdrop-filter:blur(18px) saturate(150%);max-width:none!important;margin:0!important}
+.flip-face[hidden]{display:flex!important}
+.flip-back{transform:rotateY(180deg)}
+.is-up .flip-inner{transform:rotateY(180deg)}
+.si-panel{display:flex;flex-direction:column;justify-content:center}
+@media (prefers-reduced-motion:reduce){.flip-inner,.auth-thumb{transition:none}}
+</style>
 </head>
 <body>
 <div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -877,21 +893,24 @@ canvas.addEventListener('webglcontextlost',function(e){e.preventDefault();fallba
             <span class="df-kicker">Custom merch · printed in-house</span>
             <h1 class="df-title">From logo
 to merch in minutes.</h1>
-            <div class="df-actions">
-              <button type="button" class="df-btn" data-act="auth" data-v="up">Create an account <svg width="18" height="10" viewBox="0 0 26 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 7h24M19 1l6 6-6 6"/></svg></button>
-              <button type="button" class="df-btn ghost" data-act="auth" data-v="in" id="dfSignin">Sign in</button>
-            </div>
+            
           </div>
         </div>
 
       </div>
       <div class="si-panel gut">
         <!-- Sign in page (#sign-in) -->
-        <form class="si-form" id="signinForm" aria-labelledby="inTitle" novalidate>
+        <div class="auth-switch" role="tablist" aria-label="Account">
+          <button type="button" role="tab" id="swIn" aria-selected="true" data-act="auth" data-v="in">Sign in</button>
+          <button type="button" role="tab" id="swUp" aria-selected="false" data-act="auth" data-v="up">Create account</button>
+          <i class="auth-thumb" aria-hidden="true"></i>
+        </div>
+        <div class="flip" id="authFlip"><div class="flip-inner">
+        <form class="si-form flip-face" id="signinForm" aria-labelledby="inTitle" novalidate>
           <div style="display:flex;flex-direction:column;gap:8px">
             <span class="label">Sign in</span>
-            <h2 id="inTitle" style="font-size:32px">Welcome back.</h2>
-            <p class="muted" style="font-size:13px">Sign in to see your designs and orders.</p>
+            <h2 id="inTitle" style="font-size:32px">Sign in.</h2>
+            <p class="muted" style="font-size:13px">Pick up your designs and orders. New here? Flip to Create account.</p>
           </div>
           <button type="button" class="cta-line" data-act="signin"><span class="gmark" aria-hidden="true">G</span>Continue with Google</button>
           <div class="or">or with email</div>
@@ -908,7 +927,7 @@ to merch in minutes.</h1>
         </form>
 
         <!-- Sign up page (#sign-up) -->
-        <form class="si-form" id="signupForm" aria-labelledby="upTitle" novalidate hidden>
+        <form class="si-form flip-face flip-back" id="signupForm" aria-labelledby="upTitle" novalidate hidden>
           <div style="display:flex;flex-direction:column;gap:8px">
             <span class="label">Create account</span>
             <h2 id="upTitle" style="font-size:32px">Start making merch.</h2>
@@ -929,6 +948,7 @@ to merch in minutes.</h1>
           <button class="cta" type="submit">Create account<svg class="arr" width="22" height="12" viewBox="0 0 26 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 7h24M19 1l6 6-6 6"/></svg></button>
           <p class="si-switch">Already have an account? <button type="button" class="ulink u" data-act="auth" data-v="in">Sign in</button></p>
         </form>
+        </div></div>
       </div>
     </div>
   </section>
@@ -1115,6 +1135,111 @@ function productSVG(id,cfg,opt){
   const g0=D.tf?`<g transform="${D.tf}">`:'',g1=D.tf?'</g>':'';
   return `<svg viewBox="0 0 300 400" aria-hidden="true"><ellipse cx="150" cy="393" rx="${id==='cap'||id==='sticker'||id==='tee'||id==='hoodie'?96:84}" ry="8" fill="url(#gF)"/>${g0}${D.pre||''}${base}${g1}${p.logoLast?'':logo}${g0}${shade}${D.o||''}${g1}${p.logoLast?logo:''}${guide}${back}</svg>`;
 }
+/* ===== Real product photos =====
+   Free Unsplash studio shots of plain products. Each photo is cut out in the browser (background flood-fill or
+   white-key + crop region), then recoloured by keeping the photo's own light and shadow and tinting it to the
+   chosen colour. The logo sits on a print area measured on each photo. Until a photo is ready, or if it fails
+   to load, the drawn version is used. */
+const PHOTO={
+  tee:{id:'1778671394516-8270eac13c42',o:{t1:14,tc:16,up:.06},fit:[268,340],pa:{Front:[.34,.27,.66,.52],'Left chest':[.57,.25,.69,.35],Back:[.31,.24,.69,.58]},pins:[[.3,.8],[.5,.13]]},
+  hoodie:{id:'1620799140188-3b2a02fd9a77',o:{mode:'white',lmin:.74,smax:.07,open:1,roi:[.325,.18,.71,.96]},fit:[262,350],pa:{Front:[.33,.31,.67,.5],'Left chest':[.56,.27,.68,.36],Back:[.3,.22,.7,.56]},pins:[[.3,.82],[.5,.12]]},
+  cap:{id:'1691256676359-20e5c6d4bc92',o:{t1:10},fit:[250,190],pa:{Front:[.37,.2,.63,.5]},pins:[[.82,.55],[.5,.06]]},
+  tote:{id:'1574365569389-a10d488ca3fb',o:{t1:10,tc:16,up:.04},fit:[240,340],pa:{Front:[.27,.47,.73,.82]},pins:[[.22,.9],[.5,.1]]},
+  backpack:{id:'1596273501899-336404ed1701',o:{t1:5,tc:8,up:.02,roi:[.26,.04,.8,.93]},fit:[262,320],pa:{Front:[.38,.6,.62,.84]},pins:[[.2,.75],[.5,.3]]},
+  mug:{id:'1516390118834-21602d501886',o:{mode:'white',lmin:.5,smax:.14,fill:false,roi:[.155,.22,.535,.875]},fit:[220,210],pa:{Front:[.44,.2,.9,.74]},pins:[[.8,.9],[.12,.45]]},
+  bottle:{id:'1602143407151-7111542de6e8',o:{t1:12,tc:20},fit:[160,340],pa:{Front:[.18,.4,.82,.68]},pins:[[.3,.88],[.5,.05]]},
+  notebook:{id:'1519764340700-3db40311f21e',o:{t1:6,up:.03},fit:[220,300],pa:{Front:[.2,.28,.74,.6]},pins:[[.3,.85],[.9,.5]]}
+};
+const PH={};
+(function(){
+  function seg(img,o){
+    const sc=Math.min(1,560/Math.max(img.width,img.height));const W=Math.round(img.width*sc),H=Math.round(img.height*sc);
+    const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d',{willReadFrequently:true});cx.drawImage(img,0,0,W,H);
+    const d=cx.getImageData(0,0,W,H).data,N=W*H,L=new Float32Array(N);let prod=new Uint8Array(N);
+    for(let i=0;i<N;i++)L[i]=(.2126*d[i*4]+.7152*d[i*4+1]+.0722*d[i*4+2])/255;
+    const nb=(i,x,y)=>[x>0?i-1:-1,x<W-1?i+1:-1,y>0?i-W:-1,y<H-1?i+W:-1];
+    const dist=(a,b)=>Math.abs(d[a*4]-d[b*4])+Math.abs(d[a*4+1]-d[b*4+1])+Math.abs(d[a*4+2]-d[b*4+2]);
+    const sat=i=>{const r=d[i*4],g=d[i*4+1],b=d[i*4+2],mx=Math.max(r,g,b),mn=Math.min(r,g,b);return (mx-mn)/(mx+1)};
+    if(o.mode==='white'){for(let i=0;i<N;i++)prod[i]=(L[i]>o.lmin&&sat(i)<o.smax)?1:0}
+    else{
+      const bs=[];for(let x=0;x<W;x+=2){bs.push(x,(H-1)*W+x)}for(let y=0;y<H;y+=2){bs.push(y*W,y*W+W-1)}
+      const ch=i=>{const l=L[i]*255;return [d[i*4]-l,d[i*4+1]-l,d[i*4+2]-l]};
+      const cm=[0,1,2].map(c=>{const v=bs.map(i=>ch(i)[c]).sort((a,b)=>a-b);return v[v.length>>1]});
+      const Lv=bs.map(i=>L[i]).sort((a,b)=>a-b),Lmed=Lv[Lv.length>>1],Lmax=Lv[Math.floor(Lv.length*.97)];
+      const like=i=>{const c=ch(i);return Math.abs(c[0]-cm[0])+Math.abs(c[1]-cm[1])+Math.abs(c[2]-cm[2])<(o.tc||16)&&L[i]<Math.max(Lmax,Lmed)+(o.up||.04)&&L[i]>Lmed-(o.down||.5)};
+      const bg=new Uint8Array(N),q=new Int32Array(N);let h=0,t=0;
+      for(const i of bs){if(!bg[i]&&like(i)){bg[i]=1;q[t++]=i}}
+      while(h<t){const i=q[h++];for(const j of nb(i,i%W,(i/W)|0)){if(j>=0&&!bg[j]&&dist(i,j)<o.t1&&like(j)){bg[j]=1;q[t++]=j}}}
+      for(let i=0;i<N;i++)prod[i]=bg[i]?0:1;
+    }
+    const morph=(m,er)=>{const o2=new Uint8Array(N);for(let y=0;y<H;y++)for(let x=0;x<W;x++){let v=er?1:0;outer:for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy,p=(xx<0||yy<0||xx>=W||yy>=H)?0:m[yy*W+xx];if(er&&!p){v=0;break outer}if(!er&&p){v=1;break outer}}o2[y*W+x]=v}return o2};
+    for(let k=0;k<(o.open||0);k++)prod=morph(prod,1);
+    const lab=new Int32Array(N).fill(-1),q=new Int32Array(N);let best=-1,bestScore=-1,id=0;
+    for(let s=0;s<N;s++){if(!prod[s]||lab[s]>=0)continue;let h=0,t=0,n=0,sx=0,sy=0;lab[s]=id;q[t++]=s;
+      while(h<t){const i=q[h++],x=i%W,y=(i/W)|0;n++;sx+=x;sy+=y;for(const j of nb(i,x,y)){if(j>=0&&prod[j]&&lab[j]<0){lab[j]=id;q[t++]=j}}}
+      const a=sx/n/W-.5,b=sy/n/H-.5,score=n/(1+10*(a*a+b*b));if(score>bestScore){bestScore=score;best=id}id++}
+    let m=new Uint8Array(N);for(let i=0;i<N;i++)m[i]=lab[i]===best?1:0;
+    for(let k=0;k<(o.open||0);k++)m=morph(m,0);
+    let keep=m;
+    if(o.fill!==false){const out=new Uint8Array(N);let h=0,t=0;const push=i=>{if(!m[i]&&!out[i]){out[i]=1;q[t++]=i}};
+      for(let x=0;x<W;x++){push(x);push((H-1)*W+x)}for(let y=0;y<H;y++){push(y*W);push(y*W+W-1)}
+      while(h<t){const i=q[h++];for(const j of nb(i,i%W,(i/W)|0)){if(j>=0)push(j)}}
+      keep=new Uint8Array(N);for(let i=0;i<N;i++)keep[i]=out[i]?0:1}
+    const A=new Float32Array(N);let x0=W,y0=H,x1=0,y1=0;
+    for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;let s=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)s+=keep[i+dy*W+dx];const a=s<9?(s<=4?0:(s-4)/5):1;A[i]=a;if(a>.5){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
+    if(x1<=x0||y1<=y0)return null;
+    const vals=[];for(let i=0;i<N;i+=3)if(A[i]>.9)vals.push(L[i]);vals.sort((a,b)=>a-b);
+    return {W,H,L,A,Lref:vals[Math.floor(vals.length*.93)]||1,box:{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1}};
+  }
+  function colorURL(ph,hex){
+    if(ph.cache[hex])return ph.cache[hex];
+    const s=ph.seg,c=[1,3,5].map(k=>parseInt(hex.substr(k,2),16)),cv=document.createElement('canvas');cv.width=s.box.w;cv.height=s.box.h;
+    const cx=cv.getContext('2d'),im=cx.createImageData(s.box.w,s.box.h),o=im.data;
+    for(let y=0;y<s.box.h;y++)for(let x=0;x<s.box.w;x++){const i=(y+s.box.y)*s.W+x+s.box.x,a=s.A[i];if(a<=0)continue;const k=(y*s.box.w+x)*4,v=s.L[i]/s.Lref;
+      for(let n=0;n<3;n++)o[k+n]=v<=1?c[n]*v:c[n]+(255-c[n])*Math.min(1,(v-1)*1.6);o[k+3]=a*255}
+    cx.putImageData(im,0,0);
+    let u=cv.toDataURL('image/webp',.88);if(u.indexOf('data:image/webp')!==0)u=cv.toDataURL('image/png');
+    return ph.cache[hex]=u;
+  }
+  // geometry: fit the cut-out into the 300×400 product box, standing on the floor line, and re-measure print areas and pins on it
+  function place(id,ph){
+    const s=ph.seg,cfg=PHOTO[id],k=Math.min(cfg.fit[0]/s.box.w,cfg.fit[1]/s.box.h),w=s.box.w*k,h=s.box.h*k,x=150-w/2,y=392-h;
+    ph.geo={x,y,w,h};
+    const p=P[id];p.pa={};
+    Object.entries(cfg.pa).forEach(([pl,r])=>{p.pa[pl]={x:x+r[0]*w,y:y+r[1]*h,w:(r[2]-r[0])*w,h:(r[3]-r[1])*h}});
+    p.pins=cfg.pins.map(r=>[x+r[0]*w,y+r[1]*h]);
+  }
+  let refreshT=0;
+  function refresh(){clearTimeout(refreshT);refreshT=setTimeout(()=>{try{
+    if(typeof ring!=='undefined'&&ring)ring.refreshAll();
+    if(typeof siRing!=='undefined'&&siRing)siRing.refreshAll();
+    const v=S.view;
+    if(v==='runway'){renderPanel(false);if(typeof lbOpen!=='undefined'&&lbOpen&&typeof fillLB==='function')fillLB()}
+    else if(v==='lineup')renderLineup();else if(v==='bag')renderBag();else if(v==='orders')renderOrders();else if(v==='team')renderTeam();
+  }catch(e){}},120)}
+  function crop(img,r){const w=img.naturalWidth,h=img.naturalHeight;if(!r)return {img,width:w,height:h,draw:img};
+    const c=document.createElement('canvas');c.width=Math.round(w*(r[2]-r[0]));c.height=Math.round(h*(r[3]-r[1]));c.getContext('2d').drawImage(img,-w*r[0],-h*r[1]);return c}
+  Object.entries(PHOTO).forEach(([id,cfg])=>{
+    const img=new Image();img.crossOrigin='anonymous';img.decoding='async';
+    img.onload=()=>{try{
+      const src=cfg.o.roi?crop(img,cfg.o.roi):(()=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);return c})();
+      const s=seg(src,cfg.o);if(!s)return;
+      PH[id]={seg:s,cache:{}};place(id,PH[id]);PH[id].url=hex=>colorURL(PH[id],hex);refresh();
+    }catch(e){/* keep the drawn version */}};
+    img.src=`https://images.unsplash.com/photo-${cfg.id}?w=760&q=82&auto=format`;
+  });
+})();
+const drawnSVG=productSVG;
+productSVG=function(id,cfg,opt){
+  const ph=PH[id];if(!ph||!ph.geo)return drawnSVG(id,cfg,opt);
+  opt=opt||{};
+  const p=P[id],g=ph.geo,a=area(p,cfg.place),sc=cfg.scale/100,w=a.w*sc,h=a.h*sc,x=a.x+(a.w-w)/2,y=a.y+(a.h-h)/2,v=variant(p,cfg.color);
+  const lurl=opt.logo||(S.logo&&S.logo.url);
+  const logo=!lurl?'':`<image href="${lurl}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"${v.f?` filter="url(#${v.f})"`:''} style="mix-blend-mode:${v.blend?'multiply':'normal'};opacity:.94"/>`;
+  const guide=opt.guides?`<rect x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" width="${a.w.toFixed(1)}" height="${a.h.toFixed(1)}" fill="none" stroke="#151413" stroke-opacity=".55" stroke-width="1" stroke-dasharray="4 3"/>`:'';
+  const back=cfg.place==='Back'&&p.places.length>1&&opt.backLabel!==false?'<text x="150" y="30" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" letter-spacing="2.4" fill="#66625c">BACK VIEW</text>':'';
+  return `<svg viewBox="0 0 300 400" aria-hidden="true"><ellipse cx="150" cy="393" rx="${(g.w*.46).toFixed(1)}" ry="8" fill="url(#gF)"/><image href="${ph.url(cfg.color)}" x="${g.x.toFixed(1)}" y="${g.y.toFixed(1)}" width="${g.w.toFixed(1)}" height="${g.h.toFixed(1)}" preserveAspectRatio="none"/>${logo}${guide}${back}</svg>`;
+};
 function pinsFor(id,cfg){
   const p=P[id], a=area(p,cfg.place);
   return [
@@ -2057,6 +2182,19 @@ setAuth(authFromHash(),{quiet:true});
     paused:false,showText:true,imageOrigin:'center'});
   var b=document.getElementById('dfSignin');
   if(b)b.addEventListener('click',function(){setTimeout(function(){var e=document.getElementById('in-email');if(e){e.scrollIntoView({behavior:'smooth',block:'center'});e.focus({preventScroll:true})}},60)});
+})();
+</script>
+<script>
+/* keep the flip card, the switch and the app's own sign-in/sign-up state in step */
+(function(){
+  var up=document.getElementById('signupForm'),inn=document.getElementById('signinForm'),panel=document.querySelector('.si-panel');
+  if(!up||!inn||!panel)return;
+  function sync(){var isUp=!up.hasAttribute('hidden');panel.classList.toggle('is-up',isUp);
+    document.getElementById('swIn').setAttribute('aria-selected',String(!isUp));document.getElementById('swUp').setAttribute('aria-selected',String(isUp));
+    if('inert' in up){up.inert=!isUp;inn.inert=isUp}}
+  new MutationObserver(sync).observe(up,{attributes:true,attributeFilter:['hidden']});
+  new MutationObserver(sync).observe(inn,{attributes:true,attributeFilter:['hidden']});
+  sync();
 })();
 </script>
 </body>
