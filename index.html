@@ -715,7 +715,7 @@ button.seg-b:hover{color:var(--ink)}
 </main>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<input type="file" id="fileIn" accept=".png,.jpg,.jpeg,.svg,image/png,image/jpeg,image/svg+xml" hidden>
+<input type="file" id="fileIn" accept=".png,.jpg,.jpeg,.svg,.pdf,.ai,.webp,.gif,.avif,.heic,.heif,.bmp,.tif,.tiff,image/*,application/pdf" hidden>
 
 <script>
 (function(){
@@ -1152,14 +1152,16 @@ function stepsBar(cur){
 /* ---------- logo quality rules ----------
    A logo is only accepted when every rule passes. Tune the numbers here. */
 const LOGO_RULES={
-  minPx:1500,      // raster artwork: longest side after trimming empty space, in pixels (≈13 cm at 300 dpi)
-  minSharp:.85,    // edge crispness 0–1: 1 = pixel-sharp, ~.78 = blown up 2×, ~.35 = blown up 7×
-  minContrast:.35, // tonal difference between the artwork and its background, 0–1
-  minSolid:.55     // share of the artwork that is fully opaque (catches faded / see-through logos)
+  minPx:800,       // raster artwork: longest side after trimming empty space, in pixels (≈7 cm at 300 dpi, fine for chest, cap, mug)
+  goodPx:1200,     // below this we accept but say large prints (back of a hoodie, posters) may soften
+  minSharp:.72,    // edge crispness 0–1: 1 = pixel-sharp, ~.78 = blown up 2×, ~.35 = blown up 7×; still rejects blurry or stretched files
+  minContrast:.28, // tonal difference between the artwork and its background, 0–1
+  minSolid:.45,    // share of the artwork that is fully opaque (catches faded / see-through logos)
+  maxMB:25
 };
 const RULE_TXT={
-  type:'PNG, SVG or JPG, up to 10 MB',
-  size:`At least ${LOGO_RULES.minPx} px on the longest side, or a vector SVG`,
+  type:'PNG, JPG, SVG, PDF, WEBP or HEIC, up to 25 MB',
+  size:`At least ${LOGO_RULES.minPx} px on the longest side, or a vector SVG or PDF`,
   sharp:'Crisp edges, not blurry or blown up',
   clear:'Clear, solid artwork with strong contrast'
 };
@@ -1170,7 +1172,7 @@ function logoChecks(){
   const X=R||L, q=X.q||{}, out=[];
   out.push(row(R?'bad':'ok',esc(X.name)+(R?' <span class="tag" style="background:var(--bad)">Not accepted</span>':'')));
   if(X.vector&&!q.wraps) out.push(row('ok','Vector file. Prints sharp at any size.'));
-  else out.push(q.size?row('ok',`${q.aw} × ${q.ah} px artwork. Big enough for every print area.`):row('bad',`Too small: the artwork is ${q.aw} × ${q.ah} px. We need at least ${LOGO_RULES.minPx} px on the longest side.`));
+  else out.push(q.size?(q.pdf?row('ok','PDF artwork, rendered at print resolution.'):q.small?row('warn',`${q.aw} × ${q.ah} px artwork. Sharp enough for chest prints, caps and mugs; a ${LOGO_RULES.goodPx}+ px file looks better on large prints.`):row('ok',`${q.aw} × ${q.ah} px artwork. Big enough for every print area.`)):row('bad',`Too small: the artwork is ${q.aw} × ${q.ah} px. We need at least ${LOGO_RULES.minPx} px on the longest side.`));
   if(!X.vector&&q.clear!==false&&q.solid!==false&&!q.empty) out.push(q.sharp?row('ok','Crisp edges.'):row('bad','Edges look blurry or blown up. Export the original file at full size.'));
   if(q.wraps) out.push(row('bad','This SVG only contains a picture. Upload the original PNG, or a true vector SVG.'));
   out.push(q.solid===false?row('bad','Parts of the logo look faded or see-through. Use a solid version.'):q.clear===false?row('bad','Too faint or low in contrast to print clearly. Use a bolder or darker version.'):row('ok','Clear, solid artwork with strong contrast.'));
@@ -1187,7 +1189,7 @@ function renderOnboard(){
   }
   const L=S.logo, R=S.reject, art=R||L;
   const UP='<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M4 15v4.5h16V15"/></svg>';
-  r.innerHTML=`${stepsBar(1)}<div class="reveal" style="display:flex;flex-direction:column;gap:12px"><h1 class="ob-title">Add your logo.</h1><p class="muted">PNG, SVG or JPG up to 10 MB. It has to be sharp and clear to print well, so we check it first.</p></div>
+  r.innerHTML=`${stepsBar(1)}<div class="reveal" style="display:flex;flex-direction:column;gap:12px"><h1 class="ob-title">Add your logo.</h1><p class="muted">PNG, JPG, SVG, PDF and most image files, up to 25 MB. It has to be sharp to print well, so we check it first.</p></div>
   <div class="ob-grid">
     <div class="drop reveal${R?' is-rejected':''}" id="drop" role="button" tabindex="0" data-act="pick" aria-label="Upload your logo">
       <div class="drop-art">${art?`<img src="${art.url}" alt="${R?'Rejected logo':'Your logo'}">`:`<span class="drop-empty">${UP}</span>`}</div>
@@ -1217,20 +1219,44 @@ function renderOnboard(){
 
 /* ---------- logo upload ---------- */
 function readFile(f){
-  const isSvg=/svg/i.test(f.type)||/\.svg$/i.test(f.name);
-  const okType=isSvg||/^image\/(png|jpeg)$/.test(f.type)||/\.(png|jpe?g)$/i.test(f.name);
-  if(!okType){toast('That file type is not supported. Use PNG, SVG or JPG.');return}
-  if(f.size>10*1024*1024){toast('That file is over 10 MB. Export a smaller version and try again.');return}
+  const n=f.name||'',t=(f.type||'').toLowerCase();
+  const isSvg=/svg/.test(t)||/\.svg$/i.test(n);
+  const isPdf=t==='application/pdf'||/\.(pdf|ai)$/i.test(n);   // Illustrator files saved with PDF compatibility open as PDF
+  const isImg=/^image\//.test(t)||/\.(png|jpe?g|webp|gif|avif|heic|heif|bmp|tiff?)$/i.test(n);
+  if(/\.(eps|psd|cdr|indd)$/i.test(n)){toast('We can’t open that design file directly. Export it as PDF, SVG or PNG and upload that.');return}
+  if(!isSvg&&!isPdf&&!isImg){toast('That file type is not supported. Use PNG, JPG, SVG, PDF, WEBP or HEIC.');return}
+  if(f.size>LOGO_RULES.maxMB*1024*1024){toast(`That file is over ${LOGO_RULES.maxMB} MB. Export a smaller version and try again.`);return}
   toast('Reading your logo…');
+  if(isPdf){readPdf(f);return}
   const r=new FileReader();
-  if(isSvg){r.onload=()=>loadSvg(String(r.result),f.name);r.readAsText(f);return}
+  if(isSvg){r.onload=()=>loadSvg(String(r.result),n);r.readAsText(f);return}
   r.onload=()=>{
     const img=new Image();
-    img.onload=()=>processRaster(img,f.name);
-    img.onerror=()=>toast('We could not read that image. Try exporting it again as PNG.');
+    img.onload=()=>processRaster(img,n);
+    img.onerror=()=>toast(/\.(heic|heif|tiff?)$/i.test(n)?'This browser can’t open that format. Export it as PNG or JPG, or upload it from an iPhone or Mac.':'We could not read that image. Try exporting it again as PNG.');
     img.src=r.result;
   };
   r.readAsDataURL(f);
+}
+/* PDF / AI: render the first page with pdf.js (loaded only when needed) on a transparent canvas at print resolution */
+let pdfjsReady=null;
+function loadPdfJs(){
+  if(pdfjsReady)return pdfjsReady;
+  pdfjsReady=new Promise((res,rej)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    sc.onload=()=>{try{window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';res(window.pdfjsLib)}catch(e){rej(e)}};
+    sc.onerror=()=>{pdfjsReady=null;rej(new Error('pdf.js'))};document.head.appendChild(sc)});
+  return pdfjsReady;
+}
+async function readPdf(f){
+  try{
+    const lib=await loadPdfJs();
+    const doc=await lib.getDocument({data:new Uint8Array(await f.arrayBuffer())}).promise;
+    const page=await doc.getPage(1),v0=page.getViewport({scale:1});
+    const scale=Math.min(8,2800/Math.max(v0.width,v0.height)),vp=page.getViewport({scale});
+    const cv=document.createElement('canvas');cv.width=Math.round(vp.width);cv.height=Math.round(vp.height);
+    await page.render({canvasContext:cv.getContext('2d'),viewport:vp,background:'rgba(0,0,0,0)'}).promise;
+    const img=new Image();img.onload=()=>processRaster(img,f.name,{pdf:true});img.src=cv.toDataURL('image/png');
+  }catch(e){toast('We could not open that PDF. Export the logo as PNG or SVG and try again.')}
 }
 function loadSvg(text,name){
   let doc;
@@ -1305,7 +1331,8 @@ function artQuality(cv,bgLum,bgRGB){
   return {contrast:+contrast.toFixed(2),sharpness:+sharpness.toFixed(2),solidShare:+(solid/vis).toFixed(2),
     clear:contrast>=LOGO_RULES.minContrast,solid:solid/vis>=LOGO_RULES.minSolid,sharp:sharpness>=LOGO_RULES.minSharp};
 }
-function processRaster(img,name){
+function processRaster(img,name,opts){
+  opts=opts||{};
   const w=img.naturalWidth,h=img.naturalHeight;
   if(!w||!h){toast('We could not read that image. Try exporting it again as PNG.');return}
   const sc=Math.min(1,3000/Math.max(w,h));
@@ -1336,7 +1363,7 @@ function processRaster(img,name){
   const an=document.createElement('canvas');an.width=Math.max(1,Math.round(art.w*k));an.height=Math.max(1,Math.round(art.h*k));
   const ax=an.getContext('2d');ax.imageSmoothingQuality='high';ax.drawImage(cv,art.x,art.y,art.w,art.h,0,0,an.width,an.height);
   let q={};try{q=artQuality(an,bgLum,bgRGB)}catch(_){q={clear:true,solid:true,sharp:true}}
-  q.aw=aw;q.ah=ah;q.size=Math.max(aw,ah)>=LOGO_RULES.minPx;
+  q.aw=aw;q.ah=ah;q.size=!!opts.pdf||Math.max(aw,ah)>=LOGO_RULES.minPx;q.small=!opts.pdf&&Math.max(aw,ah)<LOGO_RULES.goodPx;q.pdf=!!opts.pdf;
   // output: cropped artwork, at most 1600 px
   const o=Math.min(1,1600/Math.max(art.w,art.h)),out=document.createElement('canvas');
   out.width=Math.round((art.w+pad*2)*o);out.height=Math.round((art.h+pad*2)*o);
