@@ -1154,7 +1154,7 @@ function productSVG(id,cfg,opt){
    to load, the drawn version is used. */
 const PHOTO={
   tee:{id:'1778671394516-8270eac13c42',o:{t1:14,tc:16,up:.06},fit:[268,340],pa:{Front:[.34,.27,.66,.52],'Left chest':[.57,.25,.69,.35],Back:[.31,.24,.69,.58]},pins:[[.3,.8],[.5,.13]]},
-  hoodie:{id:'1620799140188-3b2a02fd9a77',o:{mode:'white',lmin:.74,smax:.07,open:1,roi:[.325,.18,.708,.96],cut:[[0,0,.27,.14],[.76,0,1,.11]]},fit:[262,350],pa:{Front:[.33,.31,.67,.5],'Left chest':[.56,.27,.68,.36],Back:[.3,.22,.7,.56]},pins:[[.3,.82],[.5,.12]]},
+  hoodie:{id:'1620799140188-3b2a02fd9a77',o:{mode:'white',lmin:.6,smax:.1,roi:[.3,.2,.73,.94],poly:[[.4197,.269],[.4257,.247],[.4743,.241],[.4905,.258],[.5553,.258],[.5655,.239],[.612,.247],[.6153,.274],[.6525,.301],[.6728,.323],[.6809,.344],[.687,.398],[.6951,.474],[.6991,.549],[.7052,.566],[.7113,.674],[.7133,.781],[.7133,.851],[.7052,.918],[.6647,.918],[.6586,.859],[.6444,.835],[.6383,.792],[.6363,.781],[.6262,.819],[.6222,.873],[.5837,.872],[.5027,.884],[.45,.881],[.4055,.892],[.3994,.857],[.3933,.819],[.3832,.797],[.3771,.819],[.365,.857],[.3609,.921],[.3164,.916],[.3164,.857],[.3204,.729],[.3265,.594],[.3346,.591],[.3387,.549],[.3447,.474],[.3508,.415],[.3569,.366],[.3609,.344],[.3711,.318],[.4014,.299]]},fit:[262,350],pa:{Front:[.33,.25,.67,.47],'Left chest':[.6,.21,.73,.29],Back:[.3,.2,.7,.5]},pins:[[.3,.82],[.5,.12]]},
   cap:{id:'1691256676359-20e5c6d4bc92',o:{t1:10},fit:[250,190],pa:{Front:[.37,.2,.63,.5]},pins:[[.82,.55],[.5,.06]]},
   tote:{id:'1574365569389-a10d488ca3fb',o:{t1:10,tc:16,up:.04},fit:[240,340],pa:{Front:[.27,.47,.73,.82]},pins:[[.22,.9],[.5,.1]]},
   backpack:{id:'1596273501899-336404ed1701',o:{t1:5,tc:8,up:.02,roi:[.26,.04,.8,.93]},fit:[262,320],pa:{Front:[.38,.6,.62,.84]},pins:[[.2,.75],[.5,.3]]},
@@ -1184,6 +1184,13 @@ const PH={};
       while(h<t){const i=q[h++];for(const j of nb(i,i%W,(i/W)|0)){if(j>=0&&!bg[j]&&dist(i,j)<o.t1&&like(j)){bg[j]=1;q[t++]=j}}}
       for(let i=0;i<N;i++)prod[i]=bg[i]?0:1;
     }
+    let PM=null;
+    if(o.poly){const pc=document.createElement('canvas');pc.width=W;pc.height=H;const g=pc.getContext('2d'),r=o.roi||[0,0,1,1];
+      const pts=o.poly.map(([x,y])=>[(x-r[0])/(r[2]-r[0])*W,(y-r[1])/(r[3]-r[1])*H]),n=pts.length,mid=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2];
+      g.beginPath();let m0=mid(pts[n-1],pts[0]);g.moveTo(m0[0],m0[1]);
+      for(let k=0;k<n;k++){const a=pts[k],b=mid(a,pts[(k+1)%n]);g.quadraticCurveTo(a[0],a[1],b[0],b[1])}
+      g.closePath();g.fillStyle='#000';g.fill();
+      const pd=g.getImageData(0,0,W,H).data;PM=new Float32Array(N);for(let i=0;i<N;i++){PM[i]=pd[i*4+3]/255;if(PM[i]<.5)prod[i]=0}}
     (o.cut||[]).forEach(r=>{for(let y=Math.floor(r[1]*H);y<Math.ceil(r[3]*H);y++)for(let x=Math.floor(r[0]*W);x<Math.ceil(r[2]*W);x++)prod[y*W+x]=0});
     const morph=(m,er)=>{const o2=new Uint8Array(N);for(let y=0;y<H;y++)for(let x=0;x<W;x++){let v=er?1:0;outer:for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const xx=x+dx,yy=y+dy,p=(xx<0||yy<0||xx>=W||yy>=H)?0:m[yy*W+xx];if(er&&!p){v=0;break outer}if(!er&&p){v=1;break outer}}o2[y*W+x]=v}return o2};
     for(let k=0;k<(o.open||0);k++)prod=morph(prod,1);
@@ -1199,7 +1206,7 @@ const PH={};
       while(h<t){const i=q[h++];for(const j of nb(i,i%W,(i/W)|0)){if(j>=0)push(j)}}
       keep=new Uint8Array(N);for(let i=0;i<N;i++)keep[i]=out[i]?0:1}
     const A=new Float32Array(N);let x0=W,y0=H,x1=0,y1=0;
-    for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;let s=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)s+=keep[i+dy*W+dx];const a=s<9?(s<=4?0:(s-4)/5):1;A[i]=a;if(a>.5){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
+    for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const i=y*W+x;let s=0;for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++)s+=keep[i+dy*W+dx];let a=s<9?(s<=4?0:(s-4)/5):1;if(PM)a=Math.min(a,Math.min(1,PM[i]*1.25));A[i]=a;if(a>.5){if(x<x0)x0=x;if(x>x1)x1=x;if(y<y0)y0=y;if(y>y1)y1=y}}
     if(x1<=x0||y1<=y0)return null;
     const vals=[];for(let i=0;i<N;i+=3)if(A[i]>.9)vals.push(L[i]);vals.sort((a,b)=>a-b);
     return {W,H,L,A,Lref:vals[Math.floor(vals.length*.93)]||1,box:{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1}};
