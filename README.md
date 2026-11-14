@@ -1,6 +1,6 @@
-# InstaMerch
+# InstantMerch
 
-Upload a logo, see it on 12 products, pick what you want, order, and track it. The InstaMerch team moves each order through production, and the customer gets an email at every step.
+Upload a logo, see it on 12 products, pick what you want, order, and track it. The InstantMerch team moves each order through production, and the customer gets an email at every step.
 
 This is a **clickable front-end prototype**: one self-contained `index.html`, no build step and no backend. Data lives in memory and resets on reload.
 
@@ -38,11 +38,11 @@ To publish with GitHub Pages: **Settings → Pages → Deploy from branch → `m
 
 ## Brand
 
-The logo is the "Placed" wordmark: lowercase **instamerch** in Inter Tight SemiBold (outlined), with the dot on the i as a tilted Signal Orange square. Files live in `brand/`:
+The logo is the "Placed" wordmark: lowercase **instantmerch** in Inter Tight SemiBold (outlined), with the dot on the i as a tilted Signal Orange square. Files live in `brand/`:
 
-- `instamerch-logo-color.svg`, `-black.svg`, `-white.svg`, `-reversed-color.svg`
-- `instamerch-icon-light.svg`, `-dark.svg`, `-orange.svg`, plus `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`
-- `InstaMerch-Logo-HD.pdf`: vector logo sheet with colours and usage
+- `instantmerch-logo-color.svg`, `-black.svg`, `-white.svg`, `-reversed-color.svg`
+- `instantmerch-icon-light.svg`, `-dark.svg`, `-orange.svg`, plus `favicon-32.png`, `apple-touch-icon.png`, `icon-512.png`
+- `InstantMerch-Logo-HD.pdf`: vector logo sheet with colours and usage
 
 Colours: Ink `#151413`, Signal Orange `#E8501E`, Stone `#F1F0EC`.
 

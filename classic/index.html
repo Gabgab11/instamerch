@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>InstaMerch Prototype</title>
+<title>InstantMerch Prototype</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#ffffff">
-<link rel="icon" href="../brand/instamerch-icon-light.svg" type="image/svg+xml">
+<link rel="icon" href="../brand/instantmerch-icon-light.svg" type="image/svg+xml">
 <link rel="icon" href="../brand/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="../brand/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -521,7 +521,7 @@ button.seg-b:hover{color:var(--ink)}
 </style>
 
 <style>
-/* InstaMerch intro: the "i" walks in and spells the name (plays on every page load) */
+/* InstantMerch intro: the "i" walks in and spells the name (plays on every page load) */
 .im-intro{position:fixed;inset:0;z-index:9999;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
 .im-intro.is-out{animation:im-out .6s cubic-bezier(.65,0,.35,1) forwards}
 .im-word{font-family:'Inter Tight','Helvetica Neue',Helvetica,Arial,sans-serif;font-weight:600;font-size:clamp(52px,13vw,190px);letter-spacing:-.05em;line-height:1;color:#151413;display:flex;align-items:flex-end;white-space:nowrap}
@@ -553,8 +553,8 @@ button.seg-b:hover{color:var(--ink)}
 </style>
 </head>
 <body>
-<!-- InstaMerch intro -->
-<div class="im-intro" id="im-intro" role="img" aria-label="InstaMerch">
+<!-- InstantMerch intro -->
+<div class="im-intro" id="im-intro" role="img" aria-label="InstantMerch">
   <div class="im-word" aria-hidden="true">
     <span class="im-i"><span class="im-stem">ı</span><span class="im-dot"></span></span><span class="im-l" style="--k:0">n</span><span class="im-l" style="--k:1">s</span><span class="im-l" style="--k:2">t</span><span class="im-l" style="--k:3">a</span><span class="im-l" style="--k:4">m</span><span class="im-l" style="--k:5">e</span><span class="im-l" style="--k:6">r</span><span class="im-l" style="--k:7">c</span><span class="im-l" style="--k:8">h</span>
   </div>
@@ -574,7 +574,7 @@ button.seg-b:hover{color:var(--ink)}
   document.addEventListener('keydown',function(e){ if(e.key==='Escape'||e.key==='Enter'||e.key===' ') leave(); });
 })();
 </script>
-<!-- /InstaMerch intro -->
+<!-- /InstantMerch intro -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
   <defs>
     <linearGradient id="gH" x1="0" x2="1" y1="0" y2="0">
@@ -600,8 +600,8 @@ button.seg-b:hover{color:var(--ink)}
 </svg>
 
 <header class="hd is-min" id="hd"><div class="hd-in gut">
-  <button class="brand" data-act="home" aria-label="InstaMerch home">
-    <img class="wm-logo" src="../brand/instamerch-logo-color.svg" alt="" width="115" height="24">
+  <button class="brand" data-act="home" aria-label="InstantMerch home">
+    <img class="wm-logo" src="../brand/instantmerch-logo-color.svg" alt="" width="135" height="24">
   </button>
   <nav class="nav" aria-label="Main navigation">
     <button data-act="nav" data-v="runway">Runway</button>
@@ -640,7 +640,7 @@ button.seg-b:hover{color:var(--ink)}
           <label class="check-row"><input type="checkbox" id="in-remember" checked><span>Keep me signed in on this device</span></label>
           <p class="msg" id="inMsg" role="status" aria-live="polite" style="color:var(--bad)"></p>
           <button class="cta" type="submit">Sign in<svg class="arr" width="22" height="12" viewBox="0 0 26 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 7h24M19 1l6 6-6 6"/></svg></button>
-          <p class="si-switch">New to InstaMerch? <button type="button" class="ulink u" data-act="auth" data-v="up">Create an account</button></p>
+          <p class="si-switch">New to InstantMerch? <button type="button" class="ulink u" data-act="auth" data-v="up">Create an account</button></p>
           <p class="muted" style="font-size:11px">Demo: any email and an 8+ character password will sign you in.</p>
         </form>
 
@@ -1109,7 +1109,7 @@ function setAuth(m,opt){
   hide_.hidden=true;show_.hidden=false;
   show_.classList.remove('reveal-in');void show_.offsetWidth;if(!opt.quiet)show_.classList.add('reveal-in');
   $('#inMsg').textContent='';$('#upMsg').textContent='';
-  document.title=(up?'Create account':'Sign in')+' · InstaMerch';
+  document.title=(up?'Create account':'Sign in')+' · InstantMerch';
   const h=up?'#sign-up':'#sign-in';
   if(S.view==='signin'&&location.hash!==h){try{history[opt.push?'pushState':'replaceState'](null,'',h)}catch(e){}}
   if(opt.focus){const f=up?$('#up-name'):$('#in-email');f&&f.focus({preventScroll:true})}
@@ -1117,7 +1117,7 @@ function setAuth(m,opt){
 function authFromHash(){return location.hash==='#sign-up'?'up':'in'}
 addEventListener('hashchange',()=>{if(S.view==='signin'&&(location.hash==='#sign-up'||location.hash==='#sign-in'))setAuth(authFromHash())});
 addEventListener('popstate',()=>{if(S.view==='signin')setAuth(authFromHash(),{quiet:true})});
-function signedIn(){clearInterval(siTimer);clearTimeout(siPhotoT);document.title='InstaMerch';try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}show(S.onboarded?'runway':'onboard')}
+function signedIn(){clearInterval(siTimer);clearTimeout(siPhotoT);document.title='InstantMerch';try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}show(S.onboarded?'runway':'onboard')}
 const EMAIL_RE=/^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 $('#signinForm').addEventListener('submit',e=>{
   e.preventDefault();
@@ -1637,7 +1637,7 @@ function emailCard(o,e){
   const s=e.s,h=[...o.hist].reverse().find(x=>x.s===s);
   const subj=e.hold?`Update on ${o.id}: we need something from you`:SUBJ[s].replace('{id}',o.id);
   const body=e.hold?`We've paused your order: ${esc(e.hold)}. Reply to this email and we'll sort it out.`:BODY[s].replace('{carrier}',o.carrier?` with ${esc(o.carrier)}, tracking ${esc(o.tracking)}`:'');
-  return `<div class="mail"><div class="mail-sub">To ${esc(o.email)} · Subject: <b>${esc(subj)}</b></div><div class="mail-hd"><img src="../brand/instamerch-logo-white.svg" alt="InstaMerch" style="height:18px;width:auto;display:block"></div>
+  return `<div class="mail"><div class="mail-sub">To ${esc(o.email)} · Subject: <b>${esc(subj)}</b></div><div class="mail-hd"><img src="../brand/instantmerch-logo-white.svg" alt="InstantMerch" style="height:18px;width:auto;display:block"></div>
   <div class="mail-bd"><span class="type">${o.id}</span><h3>${e.hold?'Your order is on hold.':STATUS[s]+'.'}</h3><p>${body}</p>${h&&h.note&&!e.hold?`<p class="mnote">Note from our team: “${esc(h.note)}”</p>`:''}<p class="muted" style="font-size:12px">${o.items.map(i=>`${qtyOf(i)} × ${P[i.pid].name}`).join(' · ')}</p><span class="mbtn">Track your order</span></div></div>`;
 }
 function stChip(o){
