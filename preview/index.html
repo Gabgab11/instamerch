@@ -1252,9 +1252,9 @@ function variant(p,hex){
   const dark=isDark(hex)&&!(p.printOn==='white'&&p.logoLast),mode=S.logoMode||'auto';
   if(mode==='original') return {label:pre+'Exact colors, as uploaded',exact:1};
   if(mode==='light') return {label:pre+'Light-product version',blend:!dark};
-  if(mode==='dark') return tone==='dark'?{label:pre+'Dark-product version',f:'fWhite'}:{label:pre+'Full color'};
+  if(mode==='dark') return tone==='dark'&&!(S.logo&&S.logo.urlDark)?{label:pre+'Dark-product version',f:'fWhite'}:{label:pre+'Dark-product version'};
   if(mode==='onetone') return dark?{label:pre+'One tone, white',f:'fSilW'}:{label:pre+'One tone, ink',f:'fSilK'};
-  if(dark) return tone==='dark'?{label:pre+'Light version, made for dark colors',f:'fWhite'}:{label:pre+'Full color, bright enough for dark colors'};
+  if(dark) return tone==='dark'?{label:pre+'Light version, made for dark colors',f:'fWhite'}:(S.logo&&S.logo.urlDark?{label:pre+'Dark parts printed light for dark colors'}:{label:pre+'Full color, bright enough for dark colors'});
   if(tone==='light'&&lum(hex)>.45&&!(p.printOn==='white'&&p.logoLast)) return {label:pre+'Dark version, made for light colors',f:'fInk'};
   return {label:pre+'Full color',blend:1};
 }
@@ -1752,7 +1752,7 @@ function renderOnboard(){
       <div class="variants">
         ${opt('original','vt-x'+(L.tone==='light'||L.urlLight?' on-dark':''),tile(L,'',0),'Exact colors','As uploaded, everywhere')}
         ${opt('light','',tile(Object.assign({},L,{url:L.urlLight||L.url}),'',1),'Light version','For light products')}
-        ${opt('dark','vt-d',tile(L,L.tone==='dark'?'fWhite':'',0),'Dark version','For dark products')}
+        ${opt('dark','vt-d',L.urlDark?tile(Object.assign({},L,{url:L.urlDark}),'',0):tile(L,L.tone==='dark'?'fWhite':'',0),'Dark version','For dark products')}
         ${opt('onetone','vt-m',tile(L,'fEngrave',0),'One tone','Single color, any product')}
       </div>`})():''}
       <details class="textlogo"><summary class="ulink">No logo yet? Type your brand name</summary>
@@ -1949,18 +1949,23 @@ function rejectLogo(L){
 }
 /* Logos with white parts (white lettering, white outlines) lose them on white and pastel products.
    For light products we use a copy whose near-white parts are printed in ink instead. */
-function logoFor(hex){const m=S.logoMode||'auto';if(S.logo&&m!=='auto')return m==='light'?(S.logo.urlLight||S.logo.url):S.logo.url;return S.logo?(S.logo.urlLight&&!isDark(hex)&&lum(hex)>.45?S.logo.urlLight:S.logo.url):''}
+function logoFor(hex){const m=S.logoMode||'auto',L=S.logo;if(!L)return '';if(m==='original'||m==='onetone')return L.url;if(m==='light')return L.urlLight||L.url;if(m==='dark')return L.urlDark||L.url;if(isDark(hex)&&L.urlDark)return L.urlDark;return L.urlLight&&!isDark(hex)&&lum(hex)>.45?L.urlLight:L.url}
 function makeLightVersion(L){
   const img=new Image();
   img.onload=()=>{try{
     const k=Math.min(1,1400/Math.max(img.naturalWidth||1,img.naturalHeight||1)),W=Math.max(1,Math.round((img.naturalWidth||600)*k)),H=Math.max(1,Math.round((img.naturalHeight||600)*k));
     const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');cx.drawImage(img,0,0,W,H);
-    const d=cx.getImageData(0,0,W,H),px=d.data;let op=0,wh=0;
-    for(let i=0;i<px.length;i+=4){if(px[i+3]>200){op++;if(Math.min(px[i],px[i+1],px[i+2])>215)wh++}}
+    const d=cx.getImageData(0,0,W,H),px=d.data;let op=0,wh=0,bk=0;
+    for(let i=0;i<px.length;i+=4){if(px[i+3]>200){op++;const mn=Math.min(px[i],px[i+1],px[i+2]),mx=Math.max(px[i],px[i+1],px[i+2]);if(mn>215)wh++;if(mx<70)bk++}}
+    // dark lettering disappears on black and navy: make a copy with the near-black parts printed light
+    if(op&&bk/op>=.04){const d2=cx.getImageData(0,0,W,H),q=d2.data;
+      for(let i=0;i<q.length;i+=4){const mx=Math.max(q[i],q[i+1],q[i+2]);if(q[i+3]>0&&mx<110){const t=Math.min(1,(110-mx)/50);q[i]=q[i]+(247-q[i])*t;q[i+1]=q[i+1]+(245-q[i+1])*t;q[i+2]=q[i+2]+(240-q[i+2])*t}}
+      const c2=document.createElement('canvas');c2.width=W;c2.height=H;c2.getContext('2d').putImageData(d2,0,0);L.urlDark=c2.toDataURL('image/png');
+      if(S.logo===L){syncLogo();if(S.view==='lineup')renderLineup();if(S.view==='onboard')renderOnboard();if(S.view==='studio')renderStudio()}}
     if(!op||wh/op<.04)return;                       // no meaningful white parts
     for(let i=0;i<px.length;i+=4){const m=Math.min(px[i],px[i+1],px[i+2]);if(px[i+3]>0&&m>170){const t=Math.min(1,(m-170)/45);px[i]=px[i]+(21-px[i])*t;px[i+1]=px[i+1]+(20-px[i+1])*t;px[i+2]=px[i+2]+(19-px[i+2])*t}}
     cx.putImageData(d,0,0);L.urlLight=cv.toDataURL('image/png');
-    if(S.logo===L){syncLogo();if(S.view==='lineup')renderLineup();if(S.view==='onboard')renderOnboard();if(S.view==='runway'&&typeof renderPanel==='function')renderPanel(false)}
+    if(S.logo===L){syncLogo();if(S.view==='lineup')renderLineup();if(S.view==='onboard')renderOnboard();if(S.view==='studio')renderStudio();if(S.view==='runway'&&typeof renderPanel==='function')renderPanel(false)}
   }catch(e){}};
   img.src=L.url;
 }
@@ -2409,8 +2414,8 @@ const stDefs='<defs><linearGradient id="stSh" x1="0" y1="0" x2="0" y2="1"><stop 
 
 /* real people wearing the blank piece: logo printed onto the chest (shown in white) */
 const PERSON={sweatshirt:[
-  {id:'1583445325603-01a429f4d56b',name:'Person front',w:900,h:1200,box:[.448,.355,.6,.455]},
-  {id:'1593733926335-bdec7f12acfd',name:'Person close-up',w:900,h:600,box:[.385,.25,.63,.56]}
+  {id:'1583445325603-01a429f4d56b',name:'Person front',w:900,h:1200,box:[.448,.355,.6,.455],crop:[200,150,540,540]},
+  {id:'1593733926335-bdec7f12acfd',name:'Person close-up',w:900,h:600,box:[.385,.25,.63,.56],crop:[150,0,600,600]}
 ]};
 const SIZE_CHART={tee:[[50,70],[53,72],[56,74],[59,76],[62,78],[65,80]],hoodie:[[54,68],[57,70],[60,72],[63,74],[66,76]],sweatshirt:[[53,67],[56,69],[59,71],[62,73],[65,75],[68,77]]};
 
@@ -2436,7 +2441,7 @@ function mockSVG(id,cat,color){
       return `<svg viewBox="${(a.x-pad).toFixed(0)} ${(a.y-pad).toFixed(0)} ${(a.w+pad*2).toFixed(0)} ${(a.h+pad*2).toFixed(0)}" aria-hidden="true">${flatSVG(id,cfg,side)}</svg>`}
     const a=area(P[id],cfg.place),pad=Math.max(a.w,a.h)*.35,inner=productSVG(id,cfg,{backLabel:false}).replace('viewBox="0 0 300 400"',`viewBox="${(a.x-pad).toFixed(0)} ${(a.y-pad).toFixed(0)} ${(a.w+pad*2).toFixed(0)} ${(a.h+pad*2).toFixed(0)}"`);return inner}
   if(cat.indexOf('person')===0){const x=PERSON[id][+cat.slice(6)],W=x.w,H=x.h,b=x.box,lurl=S.logo?logoFor('#FBFBF9'):'',v=variant(P[id],'#FBFBF9'),bw=(b[2]-b[0])*W,bh=(b[3]-b[1])*H;
-    return `<svg viewBox="0 0 ${W} ${H}" aria-hidden="true"><image href="https://images.unsplash.com/photo-${x.id}?w=900&q=80&auto=format" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>${lurl?`<image href="${lurl}" x="${b[0]*W}" y="${b[1]*H}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMid meet"${v.f?` filter="url(#${v.f})"`:''} style="mix-blend-mode:multiply;opacity:.92"/>`:''}</svg>`}
+    return `<svg viewBox="${(x.crop||[0,0,W,H]).join(' ')}" aria-hidden="true"><image href="https://images.unsplash.com/photo-${x.id}?w=900&q=80&auto=format" x="0" y="0" width="${W}" height="${H}" preserveAspectRatio="xMidYMid slice"/>${lurl?`<image href="${lurl}" x="${b[0]*W}" y="${b[1]*H}" width="${bw}" height="${bh}" preserveAspectRatio="xMidYMid meet"${v.f?` filter="url(#${v.f})"`:''} style="mix-blend-mode:multiply;opacity:.92"/>`:''}</svg>`}
   if(cat==='size'){const rows=SIZE_CHART[id],sz=P[id].sizes;
     return `<svg viewBox="0 0 600 600" aria-hidden="true"><rect width="600" height="600" fill="#FBFAF7"/><g transform="translate(150 40) scale(.5)">${FLAT[id].front('#FBFAF7','stroke="#1d1c1b" stroke-width="3" stroke-linejoin="round"','#e4e1db')}<path d="M180 300 L420 300 M150 560 L150 100" stroke="#E8501E" stroke-width="4" stroke-dasharray="10 8"/></g>
       <text x="300" y="350" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="18" font-weight="700" fill="#151413">${esc(P[id].name)} · size guide (cm)</text>
