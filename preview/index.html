@@ -1628,7 +1628,7 @@ function renderOnboard(){
   r.innerHTML=`${stepsBar(1)}<div class="reveal" style="display:flex;flex-direction:column;gap:12px"><h1 class="ob-title">Add your logo.</h1><p class="muted">PNG, JPG, SVG, PDF and most image files, up to 25 MB. It has to be sharp to print well, so we check it first.</p></div>
   <div class="ob-grid">
     <div class="drop reveal${R?' is-rejected':''}" id="drop" role="button" tabindex="0" data-act="pick" aria-label="Upload your logo">
-      <div class="drop-art${art&&art.tone==='light'?' on-dark':''}">${art?`<img src="${art.url}" alt="${R?'Rejected logo':'Your logo'}">`:`<span class="drop-empty">${UP}</span>`}</div>
+      <div class="drop-art${art&&(art.tone==='light'||art.urlLight)?' on-dark':''}">${art?`<img src="${art.url}" alt="${R?'Rejected logo':'Your logo'}">`:`<span class="drop-empty">${UP}</span>`}</div>
       <b>${R?'Try a sharper file':L?'Drop a new logo to replace it':'Drop your logo here'}</b><span class="muted" style="font-size:12px">or <span class="u">choose a file</span></span>
     </div>
     <div class="ob-side reveal" style="animation-delay:.15s">
@@ -1638,7 +1638,7 @@ function renderOnboard(){
         const opt=(v,cls,inner,t,d)=>`<button class="vopt${m===v?' on':''}" data-act="lmode" data-v="${v}" aria-pressed="${m===v}">${K}<div class="vt ${cls}">${inner}</div><figcaption><b>${t}</b>${d}</figcaption></button>`;
         return `<div class="vauto"><span class="label">Made for you automatically · pick one</span><button class="pill${m==='auto'?' on':''}" data-act="lmode" data-v="auto" aria-pressed="${m==='auto'}">Auto, best for each piece</button></div>
       <div class="variants">
-        ${opt('original','vt-x'+(L.tone==='light'?' on-dark':''),tile(L,'',0),'Exact colors','As uploaded, everywhere')}
+        ${opt('original','vt-x'+(L.tone==='light'||L.urlLight?' on-dark':''),tile(L,'',0),'Exact colors','As uploaded, everywhere')}
         ${opt('light','',tile(Object.assign({},L,{url:L.urlLight||L.url}),'',1),'Light version','For light products')}
         ${opt('dark','vt-d',tile(L,L.tone==='dark'?'fWhite':'',0),'Dark version','For dark products')}
         ${opt('onetone','vt-m',tile(L,'fEngrave',0),'One tone','Single color, any product')}
