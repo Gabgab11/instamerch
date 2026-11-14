@@ -770,6 +770,17 @@ window.InstaDepthField=function(root,opts){
 .si-panel{display:flex;flex-direction:column;justify-content:center}
 @media (prefers-reduced-motion:reduce){.flip-inner,.auth-thumb{transition:none}}
 </style>
+<style id="pick-css">
+.lcard .thumb{position:relative}
+.lcheck{position:absolute;top:10px;right:10px;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgb(255 255 255/.75);border:1.5px solid rgb(21 20 19/.25);color:transparent;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:background .25s,color .25s,border-color .25s,transform .45s cubic-bezier(.34,1.56,.64,1)}
+.lcard.is-on .lcheck{background:#151413;border-color:#151413;color:#fff;transform:scale(1.08)}
+.lcard.is-on .thumb{box-shadow:0 0 0 2px #151413,0 18px 40px -26px rgb(21 20 19/.6)}
+.lcard:not(.is-on) .thumb{opacity:.82}
+.lcard:focus-visible{outline:none}.lcard:focus-visible .thumb{outline:2px solid #151413;outline-offset:3px}
+.pick-bar{position:sticky;bottom:0;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:8px;padding:12px max(16px,env(safe-area-inset-right,0px)) calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));background:rgb(255 255 255/.72);backdrop-filter:blur(20px) saturate(150%);-webkit-backdrop-filter:blur(20px) saturate(150%);border:1px solid rgb(255 255 255/.85);border-radius:20px;box-shadow:0 18px 40px -26px rgb(60 30 10/.45)}
+.pick-count{font-size:13px}.pick-count b{font-size:20px;font-weight:500;margin-right:4px}
+@media (max-width:520px){.pick-bar .cta{width:100%!important;min-width:0!important}}
+</style>
 </head>
 <body>
 <div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -961,7 +972,7 @@ to merch in minutes.</h1>
     <div class="rw-grid">
       <div class="rw-left" id="rwLeft">
         <div class="rw-head">
-          <div class="rw-intro"><h1 class="rw-title">Try it on.</h1><p class="rw-sub">Your logo on twelve pieces, fitted to each print area. Drag to turn the stage. Tap the piece in front to look closer.</p><button class="ulink" style="align-self:flex-start;font-size:12px" data-act="nav" data-v="lineup">See all 12 pieces at once →</button></div>
+          <div class="rw-intro"><h1 class="rw-title">Try it on.</h1><p class="rw-sub">Your logo on every piece you picked, fitted to each print area. Drag to turn the stage. Tap the piece in front to look closer.</p><button class="ulink" id="pickLink" style="align-self:flex-start;font-size:12px" data-act="nav" data-v="lineup">Customizing all 12 pieces · <span class="u">Change pieces</span></button></div>
           <button class="logo-chip" data-act="pick" aria-label="Change your logo"><span class="lc-img"><img id="chipImg" alt=""></span><span class="lc-t"><span class="label">Your logo</span><span class="lc-n" id="chipName"></span></span><span class="u" style="font-size:12px">Change</span></button>
           <span class="sr" aria-live="polite" aria-atomic="true" id="live"></span>
         </div>
@@ -1064,8 +1075,9 @@ const P = {
    colors:[['Black','#1C1C1E'],['Oak','#B98B5A'],['White','#F4F3EF'],['Walnut','#5B3E2E'],['Silver','#B9BCC3']],sizes:['A3','A2'],
    places:['Front'],cm:{Front:'A3 · 29.7 × 42 cm'},pa:{Front:{x:98,y:150,w:104,h:150}}, pins:[[96,370],[228,250]]}
 };
-const IDS = Object.keys(P);
-const N = IDS.length;
+const ALL_IDS = Object.keys(P);
+let IDS = ALL_IDS.slice();
+let N = IDS.length;
 
 /* ---------- drawings (300×400 box, floor at y≈392) ---------- */
 const fold = (arr,o) => `<g filter="url(#fSoft)" opacity="${o||.55}">${arr.map(d=>`<path d="${d}" fill="none" stroke="#000" stroke-opacity=".2" stroke-width="5" stroke-linecap="round"/>`).join('')}</g>`;
@@ -1126,7 +1138,7 @@ function productSVG(id,cfg,opt){
   opt=opt||{};
   const p=P[id], c=cfg.color, k=mix(c,'#000000',.2), D=DRAW[id](c,k,cfg.place), light=lum(c)>.6;
   const a=area(p,cfg.place), s=cfg.scale/100, w=a.w*s, h=a.h*s, x=a.x+(a.w-w)/2, y=a.y+(a.h-h)/2, v=variant(p,c);
-  const lurl=opt.logo||(S.logo&&S.logo.url);
+  const lurl=opt.logo||logoFor(c);
   const logo=!lurl?'':`<image href="${lurl}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"${v.f?` filter="url(#${v.f})"`:''}${v.blend?' style="mix-blend-mode:multiply"':''}/>`;
   const base=D.d.map(d=>`<path d="${d}" fill="${c}"${light?' stroke="#151413" stroke-opacity=".14" stroke-width="1.2"':''}/>`).join('');
   const shade=D.d.map(d=>`<path d="${d}" fill="url(#${D.cyl?'gC':'gH'})"/>${D.flat?'':`<path d="${d}" fill="url(#gV)"/>`}`).join('');
@@ -1192,6 +1204,13 @@ const PH={};
     const vals=[];for(let i=0;i<N;i+=3)if(A[i]>.9)vals.push(L[i]);vals.sort((a,b)=>a-b);
     return {W,H,L,A,Lref:vals[Math.floor(vals.length*.93)]||1,box:{x:x0,y:y0,w:x1-x0+1,h:y1-y0+1}};
   }
+  function shadeURL(ph){
+    if(ph.shade)return ph.shade;
+    const s=ph.seg,cv=document.createElement('canvas');cv.width=s.box.w;cv.height=s.box.h;const cx=cv.getContext('2d'),im=cx.createImageData(s.box.w,s.box.h),o=im.data;
+    for(let y=0;y<s.box.h;y++)for(let x=0;x<s.box.w;x++){const i=(y+s.box.y)*s.W+x+s.box.x,a=s.A[i];if(a<=0)continue;const k=(y*s.box.w+x)*4,v=Math.min(1,s.L[i]/s.Lref);
+      const g=Math.round(255*Math.pow(v,.85));o[k]=o[k+1]=o[k+2]=g;o[k+3]=a*255}
+    cx.putImageData(im,0,0);return ph.shade=cv.toDataURL('image/png');
+  }
   function colorURL(ph,hex){
     if(ph.cache[hex])return ph.cache[hex];
     const s=ph.seg,c=[1,3,5].map(k=>parseInt(hex.substr(k,2),16)),cv=document.createElement('canvas');cv.width=s.box.w;cv.height=s.box.h;
@@ -1225,21 +1244,23 @@ const PH={};
     img.onload=()=>{try{
       const src=cfg.o.roi?crop(img,cfg.o.roi):(()=>{const c=document.createElement('canvas');c.width=img.naturalWidth;c.height=img.naturalHeight;c.getContext('2d').drawImage(img,0,0);return c})();
       const s=seg(src,cfg.o);if(!s)return;
-      PH[id]={seg:s,cache:{},hi:cfg.o.hi};place(id,PH[id]);PH[id].url=hex=>colorURL(PH[id],hex);refresh();
+      PH[id]={seg:s,cache:{},hi:cfg.o.hi};place(id,PH[id]);PH[id].url=hex=>colorURL(PH[id],hex);PH[id].shadeUrl=()=>shadeURL(PH[id]);refresh();
     }catch(e){/* keep the drawn version */}};
     img.src=`https://images.unsplash.com/photo-${cfg.id}?w=760&q=82&auto=format`;
   });
 })();
-const drawnSVG=productSVG;
+const drawnSVG=productSVG;let photoSeq=0;
 productSVG=function(id,cfg,opt){
   const ph=PH[id];if(!ph||!ph.geo)return drawnSVG(id,cfg,opt);
   opt=opt||{};
   const p=P[id],g=ph.geo,a=area(p,cfg.place),sc=cfg.scale/100,w=a.w*sc,h=a.h*sc,x=a.x+(a.w-w)/2,y=a.y+(a.h-h)/2,v=variant(p,cfg.color);
-  const lurl=opt.logo||(S.logo&&S.logo.url);
+  const lurl=opt.logo||logoFor(cfg.color);
   const logo=!lurl?'':`<image href="${lurl}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"${v.f?` filter="url(#${v.f})"`:''} style="mix-blend-mode:${v.blend?'multiply':'normal'};opacity:.94"/>`;
   const guide=opt.guides?`<rect x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" width="${a.w.toFixed(1)}" height="${a.h.toFixed(1)}" fill="none" stroke="#151413" stroke-opacity=".55" stroke-width="1" stroke-dasharray="4 3"/>`:'';
   const back=cfg.place==='Back'&&p.places.length>1&&opt.backLabel!==false?'<text x="150" y="30" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" letter-spacing="2.4" fill="#66625c">BACK VIEW</text>':'';
-  return `<svg viewBox="0 0 300 400" aria-hidden="true"><ellipse cx="150" cy="393" rx="${(g.w*.46).toFixed(1)}" ry="8" fill="url(#gF)"/><image href="${ph.url(cfg.color)}" x="${g.x.toFixed(1)}" y="${g.y.toFixed(1)}" width="${g.w.toFixed(1)}" height="${g.h.toFixed(1)}" preserveAspectRatio="none"/>${logo}${guide}${back}</svg>`;
+  const cid='pc'+(++photoSeq);
+  const shade=lurl?`<clipPath id="${cid}"><rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"/></clipPath><image href="${ph.shadeUrl()}" x="${g.x.toFixed(1)}" y="${g.y.toFixed(1)}" width="${g.w.toFixed(1)}" height="${g.h.toFixed(1)}" preserveAspectRatio="none" clip-path="url(#${cid})" style="mix-blend-mode:multiply;opacity:${v.blend?'.55':'.8'}"/>`:'';
+  return `<svg viewBox="0 0 300 400" aria-hidden="true"><ellipse cx="150" cy="393" rx="${(g.w*.46).toFixed(1)}" ry="8" fill="url(#gF)"/><image href="${ph.url(cfg.color)}" x="${g.x.toFixed(1)}" y="${g.y.toFixed(1)}" width="${g.w.toFixed(1)}" height="${g.h.toFixed(1)}" preserveAspectRatio="none"/>${logo}${shade}${guide}${back}</svg>`;
 };
 function pinsFor(id,cfg){
   const p=P[id], a=area(p,cfg.place);
@@ -1265,7 +1286,7 @@ const S = {
   orders:[], unseen:0, track:null, rules:{t1:25,r1:10,t2:50,r2:15},
   team:{tab:'orders',filter:'All',open:null,role:'Admin',who:'Nour (admin)'}
 };
-IDS.forEach(id=>S.cfg[id]=defCfg(id));
+ALL_IDS.forEach(id=>S.cfg[id]=defCfg(id));S.pick=[];
 const STATUS=['Order received','Artwork review','In production','Quality check','Shipped','Delivered'];
 const SHORT=['Received','Review','Production','QC','Shipped','Delivered'];
 const STAFF=['Unassigned','Omar (production)','Nour (admin)','Youssef (production)'];
@@ -1312,7 +1333,7 @@ class Ring{
     });
     this.tick=this.tick.bind(this);
     new ResizeObserver(()=>this.measure()).observe(stage);
-    new IntersectionObserver(es=>{this.visible=es[0].isIntersecting;if(this.visible)this.kick()},{threshold:0}).observe(stage);
+    new IntersectionObserver(es=>{this.visible=!this.dead&&es[0].isIntersecting;if(this.visible)this.kick()},{threshold:0}).observe(stage);
     if(this.opt.interactive) this.bind();
     this.measure();this.kick();
   }
@@ -1376,12 +1397,12 @@ class Ring{
   }
   bind(){
     const st=this.stage;
-    st.addEventListener('pointerdown',e=>{
+    st.addEventListener('pointerdown',e=>{if(this.dead)return;
       if(e.pointerType==='mouse'&&e.button!==0)return;
       if(e.target.closest('.rw-lb'))return;
       this.pd={x:e.clientX,y:e.clientY,t:this.target,id:e.pointerId,drag:false,abandon:false,s:[{x:e.clientX,t:performance.now()}]};
     });
-    st.addEventListener('pointermove',e=>{
+    st.addEventListener('pointermove',e=>{if(this.dead)return;
       const pd=this.pd;if(!pd||e.pointerId!==pd.id)return;
       if(e.pointerType==='mouse'&&e.buttons===0){this.end(e);return}
       const dx=e.clientX-pd.x,dy=e.clientY-pd.y;
@@ -1399,12 +1420,12 @@ class Ring{
     st.addEventListener('pointerup',up);st.addEventListener('pointercancel',up);
     st.addEventListener('click',e=>{if(performance.now()<this.suppress){e.stopPropagation();e.preventDefault()}},true);
     let acc=0,lock=0;
-    st.addEventListener('wheel',e=>{
+    st.addEventListener('wheel',e=>{if(this.dead)return;
       if(Math.abs(e.deltaX)<=Math.abs(e.deltaY))return;
       e.preventDefault();if(performance.now()<lock)return;acc+=e.deltaX;
       if(Math.abs(acc)>45){acc>0?this.next():this.prev();acc=0;lock=performance.now()+520}
     },{passive:false});
-    st.addEventListener('keydown',e=>{
+    st.addEventListener('keydown',e=>{if(this.dead)return;
       if(e.target!==st)return;
       if(e.key==='ArrowRight'){e.preventDefault();this.next()}
       else if(e.key==='ArrowLeft'){e.preventDefault();this.prev()}
@@ -1563,7 +1584,7 @@ function logoChecks(){
   if(!X.vector&&q.clear!==false&&q.solid!==false&&!q.empty) out.push(q.sharp?row('ok','Crisp edges.'):row('bad','Edges look blurry or blown up. Export the original file at full size.'));
   if(q.wraps) out.push(row('bad','This SVG only contains a picture. Upload the original PNG, or a true vector SVG.'));
   out.push(q.solid===false?row('bad','Parts of the logo look faded or see-through. Use a solid version.'):q.clear===false?row('bad','Too faint or low in contrast to print clearly. Use a bolder or darker version.'):row('ok','Clear, solid artwork with strong contrast.'));
-  if(!R) out.push(X.bg==='solid'?row('warn','Solid colored background. It will print as a block. A transparent PNG or SVG looks better.'):row('ok',X.bg==='removed'?'White background removed automatically.':'Transparent background.'));
+  if(!R) out.push(X.bg==='solid'?row('warn','Solid colored background. It will print as a block. A transparent PNG or SVG looks better.'):row('ok',X.bg==='removed'?'Background removed automatically so it blends into each piece.':'Transparent background.'));
   return out.join('');
 }
 function tile(L,f,blend){return `<svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><image href="${L.url}" x="19" y="19" width="62" height="62" preserveAspectRatio="xMidYMid meet"${f?` filter="url(#${f})"`:''}${blend?' style="mix-blend-mode:multiply"':''}/></svg>`}
@@ -1587,7 +1608,7 @@ function renderOnboard(){
       ${R?`<p class="msg" style="color:var(--bad);font-size:12px" role="alert">This logo was not accepted. ${L?`We kept your previous logo, ${esc(L.name)}.`:'Upload a file that passes every check to continue.'}</p>`:''}
       ${L&&!R?`<span class="label">Made for you automatically</span>
       <div class="variants">
-        <figure><div class="vt">${tile(L,'',1)}</div><figcaption>On light products</figcaption></figure>
+        <figure><div class="vt">${tile(Object.assign({},L,{url:L.urlLight||L.url}),'',1)}</div><figcaption>On light products</figcaption></figure>
         <figure><div class="vt vt-d">${tile(L,L.tone==='dark'?'fWhite':'',0)}</div><figcaption>${L.tone==='dark'?'Light version, on dark products':'Full color, on dark products'}</figcaption></figure>
         <figure><div class="vt vt-m">${tile(L,'fEngrave',0)}</div><figcaption>One tone, for laser engraving</figcaption></figure>
       </div>`:''}
@@ -1644,6 +1665,7 @@ function loadSvg(text,name){
       const sc=Math.min(4,1200/Math.max(vb[2],vb[3]));
       const cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(vb[2]*sc));cv.height=Math.max(1,Math.round(vb[3]*sc));
       const cx=cv.getContext('2d');cx.drawImage(test,0,0,cv.width,cv.height);
+      const knocked=!wraps&&knockBackground(cx,cv.width,cv.height);
       tone=logoTone(cx,cv.width,cv.height);
       const b=alphaBox(cx,cv.width,cv.height);
       let q={clear:true,solid:true};
@@ -1651,6 +1673,8 @@ function loadSvg(text,name){
       else if(!b)q={empty:true,clear:false,solid:true};
       else{const an=document.createElement('canvas');an.width=b.w;an.height=b.h;an.getContext('2d').drawImage(cv,b.x,b.y,b.w,b.h,0,0,b.w,b.h);const r=artQuality(an,null);q={clear:r.clear,solid:r.solid}}
       if(wraps||q.empty||!q.clear||!q.solid){rejectLogo({url,name,vector:true,bg:'transparent',tone,q});return}
+      if(knocked&&b){const pad=Math.round(Math.max(b.w,b.h)*.03),o=document.createElement('canvas');o.width=b.w+pad*2;o.height=b.h+pad*2;o.getContext('2d').drawImage(cv,b.x-pad,b.y-pad,o.width,o.height,0,0,o.width,o.height);
+        setLogo({url:o.toDataURL('image/png'),name,vector:false,w:cv.width,h:cv.height,bg:'removed',tone,q});return}
       if(b&&(b.w<cv.width*.92||b.h<cv.height*.92)){
         const pad=Math.round(Math.max(b.w,b.h)*.03);
         const nx=vb[0]+(b.x-pad)/sc,ny=vb[1]+(b.y-pad)/sc,nw=(b.w+pad*2)/sc,nh=(b.h+pad*2)/sc;
@@ -1694,6 +1718,25 @@ function artQuality(cv,bgLum,bgRGB){
   return {contrast:+contrast.toFixed(2),sharpness:+sharpness.toFixed(2),solidShare:+(solid/vis).toFixed(2),
     clear:contrast>=LOGO_RULES.minContrast,solid:solid/vis>=LOGO_RULES.minSolid,sharp:sharpness>=LOGO_RULES.minSharp};
 }
+/* Remove a solid background of any colour (white, black, a brand colour) that touches the edges, so the logo
+   prints as artwork rather than a box. Only the connected background goes: the same colour inside the logo stays. */
+function knockBackground(cx,W,H){
+  const d=cx.getImageData(0,0,W,H),px=d.data,bs=[];
+  for(let x=0;x<W;x+=Math.max(1,W>>7)){bs.push(x,(H-1)*W+x)}for(let y=0;y<H;y+=Math.max(1,H>>7)){bs.push(y*W,y*W+W-1)}
+  let op=0,R=0,G=0,B=0;bs.forEach(i=>{if(px[i*4+3]>245){op++;R+=px[i*4];G+=px[i*4+1];B+=px[i*4+2]}});
+  if(op/bs.length<.9)return null;R/=op;G/=op;B/=op;
+  let dev=0;bs.forEach(i=>{if(px[i*4+3]>245)dev+=Math.max(Math.abs(px[i*4]-R),Math.abs(px[i*4+1]-G),Math.abs(px[i*4+2]-B))});
+  if(dev/op>14)return null;                       // the edge is a photo or pattern, not a flat background
+  const N=W*H,seen=new Uint8Array(N),q=new Int32Array(N);let h=0,t=0;
+  const dd=i=>Math.max(Math.abs(px[i*4]-R),Math.abs(px[i*4+1]-G),Math.abs(px[i*4+2]-B));
+  bs.forEach(i=>{if(!seen[i]&&dd(i)<40){seen[i]=1;q[t++]=i}});
+  while(h<t){const i=q[h++],x=i%W,y=(i/W)|0;
+    const v=dd(i);px[i*4+3]=v<22?0:Math.round(px[i*4+3]*Math.min(1,(v-22)/26));
+    if(v>=40)continue;
+    for(const j of [x>0?i-1:-1,x<W-1?i+1:-1,y>0?i-W:-1,y<H-1?i+W:-1])if(j>=0&&!seen[j]){seen[j]=1;q[t++]=j}}
+  cx.putImageData(d,0,0);
+  return [R,G,B];
+}
 function processRaster(img,name){
   const w=img.naturalWidth,h=img.naturalHeight;
   if(!w||!h){toast('We could not read that image. Try exporting it again as PNG.');return}
@@ -1708,13 +1751,7 @@ function processRaster(img,name){
     const take=i=>{n++;if(px[i+3]>250){opaque++;sr+=px[i];sg+=px[i+1];sb+=px[i+2]}};
     for(let x=0;x<W;x+=Math.max(1,W>>6)){take(x*4);take(((H-1)*W+x)*4)}
     for(let y=0;y<H;y+=Math.max(1,H>>6)){take(y*W*4);take((y*W+W-1)*4)}
-    if(opaque/n>.9){
-      const R=sr/opaque,G=sg/opaque,B=sb/opaque;
-      if(Math.min(R,G,B)>200){
-        for(let i=0;i<px.length;i+=4){const dd=Math.max(Math.abs(px[i]-R),Math.abs(px[i+1]-G),Math.abs(px[i+2]-B));if(dd<18)px[i+3]=0;else if(dd<48)px[i+3]=Math.round(px[i+3]*(dd-18)/30)}
-        cx.putImageData(d,0,0);bg='removed';
-      }else{bg='solid';bgLum=(.2126*R+.7152*G+.0722*B)/255;bgRGB=[R,G,B]}
-    }
+    if(opaque/n>.9){if(knockBackground(cx,W,H))bg='removed';else{bg='solid';const R=sr/opaque,G=sg/opaque,B=sb/opaque;bgLum=(.2126*R+.7152*G+.0722*B)/255;bgRGB=[R,G,B]}}
     if(bg!=='solid'){const b=alphaBox(cx,W,H);if(b)art=b}
   }catch(_){}
   // artwork size at the file's own resolution
@@ -1742,7 +1779,25 @@ function rejectLogo(L){
   const q=L.q||{};
   toast(q.wraps?'Logo not accepted: the SVG only contains a picture.':q.size===false?'Logo not accepted: the file is too small to print sharp.':q.sharp===false?'Logo not accepted: the edges are blurry.':q.solid===false?'Logo not accepted: it looks faded.':'Logo not accepted: it is too faint to print clearly.');
 }
+/* Logos with white parts (white lettering, white outlines) lose them on white and pastel products.
+   For light products we use a copy whose near-white parts are printed in ink instead. */
+function logoFor(hex){return S.logo?(S.logo.urlLight&&!isDark(hex)&&lum(hex)>.45?S.logo.urlLight:S.logo.url):''}
+function makeLightVersion(L){
+  const img=new Image();
+  img.onload=()=>{try{
+    const k=Math.min(1,1400/Math.max(img.naturalWidth||1,img.naturalHeight||1)),W=Math.max(1,Math.round((img.naturalWidth||600)*k)),H=Math.max(1,Math.round((img.naturalHeight||600)*k));
+    const cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');cx.drawImage(img,0,0,W,H);
+    const d=cx.getImageData(0,0,W,H),px=d.data;let op=0,wh=0;
+    for(let i=0;i<px.length;i+=4){if(px[i+3]>200){op++;if(Math.min(px[i],px[i+1],px[i+2])>215)wh++}}
+    if(!op||wh/op<.04)return;                       // no meaningful white parts
+    for(let i=0;i<px.length;i+=4){const m=Math.min(px[i],px[i+1],px[i+2]);if(px[i+3]>0&&m>170){const t=Math.min(1,(m-170)/45);px[i]=px[i]+(21-px[i])*t;px[i+1]=px[i+1]+(20-px[i+1])*t;px[i+2]=px[i+2]+(19-px[i+2])*t}}
+    cx.putImageData(d,0,0);L.urlLight=cv.toDataURL('image/png');
+    if(S.logo===L){syncLogo();if(S.view==='lineup')renderLineup();if(S.view==='onboard')renderOnboard();if(S.view==='runway'&&typeof renderPanel==='function')renderPanel(false)}
+  }catch(e){}};
+  img.src=L.url;
+}
 function setLogo(L){
+  try{makeLightVersion(L)}catch(e){}
   S.logo=L;S.reject=null;
   syncLogo();
   if(S.view==='onboard')renderOnboard();
@@ -1759,11 +1814,25 @@ $('#fileIn').addEventListener('change',e=>{const f=e.target.files[0];if(f)readFi
 /* ---------- runway ---------- */
 let playing=false,engaged=false,panelHover=false,autoT=0,lbOpen=false;
 const SPEED=5000;
+function ticksHTML(){return IDS.map((id,i)=>`<button class="tick" data-act="tick" data-v="${i}" aria-current="${i===0}" aria-label="${pad(i+1)}: ${P[id].name}"><span class="tick-bar"></span><span class="tick-label">${pad(i+1)}<span class="tick-name">&nbsp;&nbsp;${P[id].name}</span></span></button>`).join('')}
+function pickNote(){const el=document.getElementById('pickLink');if(el)el.innerHTML=`Customizing ${N===ALL_IDS.length?'all 12 pieces':N+(N===1?' piece':' pieces')} · <span class="u">Change pieces</span>`}
+/* show only the pieces the customer picked on the customizing board */
+function setActive(list){
+  const next=ALL_IDS.filter(id=>list.includes(id));
+  IDS=next.length?next:ALL_IDS.slice();N=IDS.length;S.idx=0;
+  if(ring){
+    const old=ring;old.dead=true;old.visible=false;old.opt.onIndex=null;old.opt.onDrag=null;cancelAnimationFrame(old.raf);
+    $('#actors').innerHTML='';$('#ticks').innerHTML=ticksHTML();
+    ring=new Ring($('#stage'),$('#actors'),{interactive:true,onIndex,onDrag:d=>{cursorState()}});
+    ring.idx=-1;ring.setIndex(0,true);ring.target=0;ring.cur=reduce?0:-1.15;ring.kick();
+  }
+  pickNote();
+}
 function initRunway(){
   if(ring)return;
-  $('#ticks').innerHTML=IDS.map((id,i)=>`<button class="tick" data-act="tick" data-v="${i}" aria-current="${i===0}" aria-label="${pad(i+1)}: ${P[id].name}"><span class="tick-bar"></span><span class="tick-label">${pad(i+1)}<span class="tick-name">&nbsp;&nbsp;${P[id].name}</span></span></button>`).join('');
+  $('#ticks').innerHTML=ticksHTML();
   if(S.logo){$('#chipImg').src=S.logo.url;$('#chipName').textContent=S.logo.name}
-  ring=new Ring($('#stage'),$('#actors'),{interactive:true,onIndex,onDrag:d=>{cursorState()}});
+  ring=new Ring($('#stage'),$('#actors'),{interactive:true,onIndex,onDrag:d=>{cursorState()}});pickNote();
   ring.idx=-1;ring.setIndex(S.idx,true);ring.target=S.idx;ring.cur=S.idx-(reduce?0:1.15);ring.kick();
   initCursor();
   const panel=$('#panel');
@@ -1913,15 +1982,19 @@ function lineCfg(id){
   return c;
 }
 function renderLineup(){
-  const m=S.lineMode||'set',L=S.logo;
-  const cards=IDS.map((id,i)=>{const c=lineCfg(id),p=P[id],v=variant(p,c.color);
-    return `<button class="lcard" data-act="lineGo" data-v="${id}" style="animation-delay:${i*40}ms"><span class="thumb">${productSVG(id,c,{backLabel:false})}</span>
+  const m=S.lineMode||'set',L=S.logo,sel=S.pick||[];
+  const cards=ALL_IDS.map((id,i)=>{const c=lineCfg(id),p=P[id],v=variant(p,c.color),on=sel.includes(id);
+    return `<button class="lcard${on?' is-on':''}" data-act="linePick" data-v="${id}" aria-pressed="${on}" style="animation-delay:${i*40}ms"><span class="thumb">${productSVG(id,c,{backLabel:false})}<span class="lcheck" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5L19.5 7"/></svg></span></span>
       <span class="lcard-t"><span class="type">${pad(i+1)} · ${p.method}</span><span class="nm">${p.name}</span><span class="vline"><i class="vchip v-${v.f||'full'}"></i>${v.label}</span><span class="muted tnum">${colorName(id,c.color)} · from ${money(p.price)}</span></span></button>`}).join('');
-  $('#lineRoot').innerHTML=`<div class="page-head"><div style="display:flex;flex-direction:column;gap:10px"><span class="label">Lineup</span><h1 class="page-title">All 12 pieces.</h1><p class="muted" style="max-width:52ch;font-size:13px">Every piece with your logo already fitted. Switch to dark colors to see the light version of your logo, and the one-color version on embroidered and engraved pieces.</p></div>
-    <button class="logo-chip" data-act="pick" aria-label="Change your logo"><span class="lc-img"><img src="${L.url}" alt=""></span><span class="lc-t"><span class="label">Your logo</span><span class="lc-n">${esc(L.name)}</span></span><span class="u" style="font-size:12px">Change</span></button></div>
-  <div class="seg" role="group" aria-label="Product colors" style="max-width:460px"><button data-act="lineMode" data-v="set" aria-pressed="${m==='set'}">As set</button><button data-act="lineMode" data-v="light" aria-pressed="${m==='light'}">Light colors</button><button data-act="lineMode" data-v="dark" aria-pressed="${m==='dark'}">Dark colors</button></div>
+  const n=sel.length;
+  $('#lineRoot').innerHTML=`<div class="page-head"><div style="display:flex;flex-direction:column;gap:10px"><span class="label">Step 3 · Pick your pieces</span><h1 class="page-title">What should we make?</h1><p class="muted" style="max-width:52ch;font-size:13px">Tap the pieces you want, one or all twelve. Only these go to the customizing board, where you set colors, placement and sizes.</p></div>
+    ${L?`<button class="logo-chip" data-act="pick" aria-label="Change your logo"><span class="lc-img"><img src="${L.url}" alt=""></span><span class="lc-t"><span class="label">Your logo</span><span class="lc-n">${esc(L.name)}</span></span><span class="u" style="font-size:12px">Change</span></button>`:''}</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+    <div class="seg" role="group" aria-label="Product colors" style="max-width:460px;flex:1 1 320px"><button data-act="lineMode" data-v="set" aria-pressed="${m==='set'}">As set</button><button data-act="lineMode" data-v="light" aria-pressed="${m==='light'}">Light colors</button><button data-act="lineMode" data-v="dark" aria-pressed="${m==='dark'}">Dark colors</button></div>
+    <button class="ulink" data-act="pickAll" style="font-size:12px">${n===ALL_IDS.length?'Clear selection':'Select all 12'}</button>
+  </div>
   <div class="lgrid">${cards}</div>
-  <div class="ob-foot"><span class="muted" style="font-size:12px">Tap a piece to set colors and sizes on the runway.</span><button class="cta" style="width:auto;min-width:260px" data-act="lineAll">Add all 12 as set ${ARR}</button></div>`;
+  <div class="pick-bar"><span class="pick-count"><b class="tnum">${n}</b> ${n===1?'piece':'pieces'} picked</span><button class="cta" style="width:auto;min-width:240px" data-act="lineCustomize" ${n?'':'disabled'}>${n?'Customize '+(n===1?'this piece':n===ALL_IDS.length?'all 12':'these '+n):'Pick at least one'} ${ARR}</button></div>`;
 }
 
 /* ---------- bag / checkout ---------- */
@@ -2077,7 +2150,7 @@ function renderTeam(){
     <div class="blk"><div class="blk-t"><h2>Bulk discounts</h2></div><div class="row2" style="max-width:520px">
       <div class="field"><label for="t1">Tier 1 · from pieces → % off</label><div style="display:flex;gap:12px"><input class="in tnum" id="t1" type="number" min="1" value="${S.rules.t1}" ${isAdmin?'':'disabled'}><input class="in tnum" id="r1" type="number" min="0" max="50" value="${S.rules.r1}" ${isAdmin?'':'disabled'}></div></div>
       <div class="field"><label for="t2">Tier 2 · from pieces → % off</label><div style="display:flex;gap:12px"><input class="in tnum" id="t2" type="number" min="1" value="${S.rules.t2}" ${isAdmin?'':'disabled'}><input class="in tnum" id="r2" type="number" min="0" max="50" value="${S.rules.r2}" ${isAdmin?'':'disabled'}></div></div></div></div>
-    <div style="border-top:1px solid var(--line-2)">${IDS.map(id=>{const p=P[id];return `<div class="lrow" style="grid-template-columns:64px minmax(0,1fr) auto"><div class="thumb">${productSVG(id,defCfg(id),{guides:true,backLabel:false})}</div><div class="lrow-t"><span class="nm">${p.name}</span><span class="meta">${p.method} · ${p.colors.length} colors · ${p.sizes.length} ${p.sizes.length===1?'size':'sizes'} · print ${p.cm[p.places[0]]}</span></div><div class="field"><label for="pr-${id}">Base price</label><input class="in tnum price-in" id="pr-${id}" data-pid="${id}" type="number" min="1" step="0.5" value="${p.price}" ${isAdmin?'':'disabled'}></div></div>`}).join('')}</div>`;
+    <div style="border-top:1px solid var(--line-2)">${ALL_IDS.map(id=>{const p=P[id];return `<div class="lrow" style="grid-template-columns:64px minmax(0,1fr) auto"><div class="thumb">${productSVG(id,defCfg(id),{guides:true,backLabel:false})}</div><div class="lrow-t"><span class="nm">${p.name}</span><span class="meta">${p.method} · ${p.colors.length} colors · ${p.sizes.length} ${p.sizes.length===1?'size':'sizes'} · print ${p.cm[p.places[0]]}</span></div><div class="field"><label for="pr-${id}">Base price</label><input class="in tnum price-in" id="pr-${id}" data-pid="${id}" type="number" min="1" step="0.5" value="${p.price}" ${isAdmin?'':'disabled'}></div></div>`}).join('')}</div>`;
     bindTeam();return;
   }
   const f=T.filter,list=S.orders.filter(o=>f==='All'||(f==='On hold'?o.hold:(!o.hold&&STATUS[o.status]===f)));
@@ -2108,7 +2181,7 @@ document.addEventListener('click',e=>{
     case 'signin':signedIn();break;
     case 'purpose':S.purpose=v;S.obStep=1;renderOnboard();window.scrollTo(0,0);break;
     case 'obBack':S.obStep=0;renderOnboard();break;
-    case 'obDone':if(!S.logo){toast('Add a logo that passes the checks first.');break}S.onboarded=true;show('runway');break;
+    case 'obDone':if(!S.logo){toast('Add a logo that passes the checks first.');break}S.onboarded=true;show('lineup');break;
     case 'pick':$('#fileIn').click();break;
     case 'mktext':{const t=($('#tl').value||'').trim();if(!t){toast('Type a brand name first.');break}
       const fsz=Math.max(20,Math.min(46,520/t.length));
@@ -2131,8 +2204,11 @@ document.addEventListener('click',e=>{
     case 'pin':engage();hot(+v,true);break;
     case 'ship':saveAddr();S.ship=v;renderBag();break;
     case 'remove':delete S.bag[v];updateBadges();renderBag();toast(P[v].name+' removed');break;
-    case 'editPiece':S.cfg[v]=clone(S.bag[v]);show('runway');ring.refresh(IDS.indexOf(v));ring.go(IDS.indexOf(v));renderPanel(true);engage();break;
+    case 'editPiece':S.cfg[v]=clone(S.bag[v]);if(!IDS.includes(v)){S.pick=[...new Set([...IDS,v])];setActive(S.pick)}show('runway');ring.refresh(IDS.indexOf(v));ring.go(IDS.indexOf(v));renderPanel(true);engage();break;
     case 'pay':pay();break;
+    case 'linePick':{const a=S.pick||(S.pick=[]),k=a.indexOf(v);if(k>=0)a.splice(k,1);else a.push(v);renderLineup();break}
+    case 'pickAll':S.pick=(S.pick||[]).length===ALL_IDS.length?[]:ALL_IDS.slice();renderLineup();break;
+    case 'lineCustomize':{if(!(S.pick||[]).length)break;setActive(S.pick);show('runway');if(ring)renderPanel(true);toast('Customizing '+N+(N===1?' piece':' pieces'));break}
     case 'lineMode':S.lineMode=v;renderLineup();break;
     case 'lineGo':{const i=IDS.indexOf(v);show('runway');ring.go(i);break}
     case 'lineAll':{IDS.forEach(id=>{const c=S.cfg[id];if(qtyOf(c))S.bag[id]=clone(c)});updateBadges();toast('All 12 pieces added to your order');show('bag');break}
