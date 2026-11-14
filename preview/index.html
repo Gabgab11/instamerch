@@ -332,13 +332,28 @@ select.in{cursor:pointer}
 .checks{list-style:none;margin:0 0 10px;padding:0;border-top:1px solid var(--line-2)}
 .checks li{display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line-2);font-size:13px}
 .checks .k{width:16px;flex:0 0 auto}
-.variants{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:0 0 10px}
+.variants{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 10px}
+@media (max-width:560px){.variants{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.vopt{all:unset;box-sizing:border-box;cursor:pointer;display:flex;flex-direction:column;gap:8px;position:relative;text-align:left}
+.vopt .vt{transition:box-shadow .2s,transform .2s}
+.vopt:hover .vt{transform:translateY(-2px)}
+.vopt:focus-visible .vt{box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 4px #ff5a1f}
+.vopt.on .vt{box-shadow:0 0 0 2px var(--bg,#fff),0 0 0 4px #151413}
+.vopt .vk{position:absolute;top:8px;right:8px;width:20px;height:20px;border-radius:50%;background:#151413;color:#fff;display:none;place-items:center}
+.vopt.on .vk{display:grid}
+.vopt figcaption b{display:block;color:var(--ink,#151413);font-weight:500;font-size:12px}
+.vt-x{background:repeating-conic-gradient(#ecebe8 0 25%,#f8f7f5 0 50%) 0 0/14px 14px}
+.vt-x.on-dark{background:repeating-conic-gradient(#2a2a2d 0 25%,#202022 0 50%) 0 0/14px 14px;border-color:#202022}
+.vauto{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.vauto .pill{all:unset;cursor:pointer;font-size:12px;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:rgba(255,255,255,.6)}
+.vauto .pill.on{background:#151413;color:#fff;border-color:#151413}
+.drop-art.on-dark{background:#1B1B1D;border-radius:16px;padding:14px}
 .variants figure{margin:0;display:flex;flex-direction:column;gap:8px}
 .vt{aspect-ratio:1;max-width:100%;display:grid;place-items:center;border:1px solid var(--line)}
 .vt img{width:62%;height:62%;object-fit:contain}
 .vt-d{background:#1B1B1D;border-color:#1B1B1D}
 .vt-d img{filter:brightness(0) invert(1)}
-.vt-m{background:#A9ADB6;border-color:#A9ADB6}
+.vt-m{background:#5b6068;border-color:#5b6068}
 .vt-m img{filter:brightness(0);opacity:.85}
 figcaption{font-size:11px;color:var(--muted);line-height:1.35}
 details.textlogo{border-top:1px solid var(--line-2);padding-top:14px}
@@ -872,7 +887,7 @@ canvas.addEventListener('webglcontextlost',function(e){e.preventDefault();fallba
     <filter id="fDrop" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="6" stdDeviation="6" flood-color="#000" flood-opacity=".18"/></filter>
     <filter id="fWhite" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .97  0 0 0 0 .97  0 0 0 0 .96  -.3 -1 -.1 1.4 0"/></filter>
     <filter id="fInk" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .08  0 0 0 0 .08  0 0 0 0 .075  .3 1 .1 1 -1.4"/></filter>
-    <filter id="fEngrave" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .93  0 0 0 0 .93  0 0 0 0 .92  -.26 -.86 -.09 1.25 0"/></filter>
+    <filter id="fEngrave" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .93  0 0 0 0 .93  0 0 0 0 .92  0 0 0 1 0"/></filter><filter id="fSilW" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .97  0 0 0 0 .97  0 0 0 0 .96  0 0 0 1 0"/></filter><filter id="fSilK" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="0 0 0 0 .08  0 0 0 0 .08  0 0 0 0 .075  0 0 0 1 0"/></filter>
   </defs>
 </svg>
 
@@ -1124,7 +1139,11 @@ function area(p,place){return p.pa[place]||p.pa[p.places[0]]}
 function variant(p,hex){
   const tone=(S.logo&&S.logo.tone)||'mid',pre=p.method==='Embroidery'?'Embroidered · ':'';
   if(p.method==='Laser engraving') return {label:'Laser engraved, one tone',f:'fEngrave'};
-  const dark=isDark(hex)&&!(p.printOn==='white'&&p.logoLast);
+  const dark=isDark(hex)&&!(p.printOn==='white'&&p.logoLast),mode=S.logoMode||'auto';
+  if(mode==='original') return {label:pre+'Exact colors, as uploaded',exact:1};
+  if(mode==='light') return {label:pre+'Light-product version',blend:!dark};
+  if(mode==='dark') return tone==='dark'?{label:pre+'Dark-product version',f:'fWhite'}:{label:pre+'Full color'};
+  if(mode==='onetone') return dark?{label:pre+'One tone, white',f:'fSilW'}:{label:pre+'One tone, ink',f:'fSilK'};
   if(dark) return tone==='dark'?{label:pre+'Light version, made for dark colors',f:'fWhite'}:{label:pre+'Full color, bright enough for dark colors'};
   if(tone==='light'&&lum(hex)>.45&&!(p.printOn==='white'&&p.logoLast)) return {label:pre+'Dark version, made for light colors',f:'fInk'};
   return {label:pre+'Full color',blend:1};
@@ -1262,11 +1281,11 @@ productSVG=function(id,cfg,opt){
   opt=opt||{};
   const p=P[id],g=ph.geo,a=area(p,cfg.place),sc=cfg.scale/100,w=a.w*sc,h=a.h*sc,x=a.x+(a.w-w)/2,y=a.y+(a.h-h)/2,v=variant(p,cfg.color);
   const lurl=opt.logo||logoFor(cfg.color);
-  const logo=!lurl?'':`<image href="${lurl}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"${v.f?` filter="url(#${v.f})"`:''} style="mix-blend-mode:${v.blend?'multiply':'normal'};opacity:.94"/>`;
+  const logo=!lurl?'':`<image href="${lurl}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" preserveAspectRatio="xMidYMid meet"${v.f?` filter="url(#${v.f})"`:''} style="mix-blend-mode:${v.blend?'multiply':'normal'};opacity:${v.exact?1:.94}"/>`;
   const guide=opt.guides?`<rect x="${a.x.toFixed(1)}" y="${a.y.toFixed(1)}" width="${a.w.toFixed(1)}" height="${a.h.toFixed(1)}" fill="none" stroke="#151413" stroke-opacity=".55" stroke-width="1" stroke-dasharray="4 3"/>`:'';
   const back=cfg.place==='Back'&&p.places.length>1&&opt.backLabel!==false?'<text x="150" y="30" text-anchor="middle" font-family="Helvetica, Arial, sans-serif" font-size="10" letter-spacing="2.4" fill="#66625c">BACK VIEW</text>':'';
   const cid='pc'+(++photoSeq);
-  const shade=lurl?`<clipPath id="${cid}"><rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"/></clipPath><image href="${ph.shadeUrl()}" x="${g.x.toFixed(1)}" y="${g.y.toFixed(1)}" width="${g.w.toFixed(1)}" height="${g.h.toFixed(1)}" preserveAspectRatio="none" clip-path="url(#${cid})" style="mix-blend-mode:multiply;opacity:${v.blend?'.55':'.8'}"/>`:'';
+  const shade=lurl?`<clipPath id="${cid}"><rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}"/></clipPath><image href="${ph.shadeUrl()}" x="${g.x.toFixed(1)}" y="${g.y.toFixed(1)}" width="${g.w.toFixed(1)}" height="${g.h.toFixed(1)}" preserveAspectRatio="none" clip-path="url(#${cid})" style="mix-blend-mode:multiply;opacity:${v.exact?'.32':v.blend?'.55':'.8'}"/>`:'';
   return `<svg viewBox="0 0 300 400" aria-hidden="true"><ellipse cx="150" cy="393" rx="${(g.w*.46).toFixed(1)}" ry="8" fill="url(#gF)"/><image href="${ph.url(cfg.color)}" x="${g.x.toFixed(1)}" y="${g.y.toFixed(1)}" width="${g.w.toFixed(1)}" height="${g.h.toFixed(1)}" preserveAspectRatio="none"/>${logo}${shade}${guide}${back}</svg>`;
 };
 function pinsFor(id,cfg){
@@ -1287,7 +1306,7 @@ function defCfg(id){
 }
 const S = {
   view:'signin', auth:'in', onboarded:false, obStep:0, purpose:null,
-  logo:null, reject:null,
+  logo:null, reject:null, logoMode:'auto',
   cfg:{}, bag:{}, idx:0, ship:'cairo',
   addr:{name:'Amira Hassan',email:'amira@northfield.co',line:'14 Hassan Sabry St, Zamalek',city:'Cairo',phone:'+20 100 000 0000'},
   orders:[], unseen:0, track:null, rules:{t1:25,r1:10,t2:50,r2:15},
@@ -1609,18 +1628,21 @@ function renderOnboard(){
   r.innerHTML=`${stepsBar(1)}<div class="reveal" style="display:flex;flex-direction:column;gap:12px"><h1 class="ob-title">Add your logo.</h1><p class="muted">PNG, JPG, SVG, PDF and most image files, up to 25 MB. It has to be sharp to print well, so we check it first.</p></div>
   <div class="ob-grid">
     <div class="drop reveal${R?' is-rejected':''}" id="drop" role="button" tabindex="0" data-act="pick" aria-label="Upload your logo">
-      <div class="drop-art">${art?`<img src="${art.url}" alt="${R?'Rejected logo':'Your logo'}">`:`<span class="drop-empty">${UP}</span>`}</div>
+      <div class="drop-art${art&&art.tone==='light'?' on-dark':''}">${art?`<img src="${art.url}" alt="${R?'Rejected logo':'Your logo'}">`:`<span class="drop-empty">${UP}</span>`}</div>
       <b>${R?'Try a sharper file':L?'Drop a new logo to replace it':'Drop your logo here'}</b><span class="muted" style="font-size:12px">or <span class="u">choose a file</span></span>
     </div>
     <div class="ob-side reveal" style="animation-delay:.15s">
       <span class="label">${art?'Checks':'What we check'}</span><ul class="checks">${logoChecks()}</ul>
       ${R?`<p class="msg" style="color:var(--bad);font-size:12px" role="alert">This logo was not accepted. ${L?`We kept your previous logo, ${esc(L.name)}.`:'Upload a file that passes every check to continue.'}</p>`:''}
-      ${L&&!R?`<span class="label">Made for you automatically</span>
+      ${L&&!R?(()=>{const m=S.logoMode||'auto',K='<span class="vk"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5 10 17l9-10"/></svg></span>';
+        const opt=(v,cls,inner,t,d)=>`<button class="vopt${m===v?' on':''}" data-act="lmode" data-v="${v}" aria-pressed="${m===v}">${K}<div class="vt ${cls}">${inner}</div><figcaption><b>${t}</b>${d}</figcaption></button>`;
+        return `<div class="vauto"><span class="label">Made for you automatically · pick one</span><button class="pill${m==='auto'?' on':''}" data-act="lmode" data-v="auto" aria-pressed="${m==='auto'}">Auto, best for each piece</button></div>
       <div class="variants">
-        <figure><div class="vt">${tile(Object.assign({},L,{url:L.urlLight||L.url}),'',1)}</div><figcaption>On light products</figcaption></figure>
-        <figure><div class="vt vt-d">${tile(L,L.tone==='dark'?'fWhite':'',0)}</div><figcaption>${L.tone==='dark'?'Light version, on dark products':'Full color, on dark products'}</figcaption></figure>
-        <figure><div class="vt vt-m">${tile(L,'fEngrave',0)}</div><figcaption>One tone, for laser engraving</figcaption></figure>
-      </div>`:''}
+        ${opt('original','vt-x'+(L.tone==='light'?' on-dark':''),tile(L,'',0),'Exact colors','As uploaded, everywhere')}
+        ${opt('light','',tile(Object.assign({},L,{url:L.urlLight||L.url}),'',1),'Light version','For light products')}
+        ${opt('dark','vt-d',tile(L,L.tone==='dark'?'fWhite':'',0),'Dark version','For dark products')}
+        ${opt('onetone','vt-m',tile(L,'fEngrave',0),'One tone','Single color, any product')}
+      </div>`})():''}
       <details class="textlogo"><summary class="ulink">No logo yet? Type your brand name</summary>
         <div style="display:flex;flex-direction:column;gap:14px;margin-top:14px"><div class="field"><label for="tl">Brand name</label><input class="in" id="tl" maxlength="20" placeholder="Your brand"></div><button class="cta-line cta-sm" data-act="mktext">Use as my logo</button></div>
       </details>
@@ -1815,7 +1837,7 @@ function rejectLogo(L){
 }
 /* Logos with white parts (white lettering, white outlines) lose them on white and pastel products.
    For light products we use a copy whose near-white parts are printed in ink instead. */
-function logoFor(hex){return S.logo?(S.logo.urlLight&&!isDark(hex)&&lum(hex)>.45?S.logo.urlLight:S.logo.url):''}
+function logoFor(hex){const m=S.logoMode||'auto';if(S.logo&&m!=='auto')return m==='light'?(S.logo.urlLight||S.logo.url):S.logo.url;return S.logo?(S.logo.urlLight&&!isDark(hex)&&lum(hex)>.45?S.logo.urlLight:S.logo.url):''}
 function makeLightVersion(L){
   const img=new Image();
   img.onload=()=>{try{
@@ -2217,6 +2239,7 @@ document.addEventListener('click',e=>{
     case 'obBack':S.obStep=0;renderOnboard();break;
     case 'obDone':if(!S.logo){toast('Add a logo that passes the checks first.');break}S.onboarded=true;show('lineup');break;
     case 'pick':$('#fileIn').click();break;
+    case 'lmode':S.logoMode=v;renderOnboard();syncLogo();toast(v==='auto'?'We will pick the best version for each piece.':v==='original'?'Your logo keeps its exact colors on every piece.':v==='light'?'Light version applied to every piece.':v==='dark'?'Dark version applied to every piece.':'One-tone version applied to every piece.');break;
     case 'mktext':{const t=($('#tl').value||'').trim();if(!t){toast('Type a brand name first.');break}
       const fsz=Math.max(20,Math.min(46,520/t.length));
       const s=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 120"><text x="150" y="74" text-anchor="middle" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-weight="700" font-size="${fsz}" letter-spacing="1" fill="#151413">${esc(t.toUpperCase())}</text><rect x="110" y="92" width="80" height="3" fill="#151413"/></svg>`;
